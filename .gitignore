@@ -1,0 +1,36 @@
+# --- .NET / MAUI ---
+**/bin/
+**/obj/
+*.user
+*.userosscache
+*.suo
+*.csproj.user
+*.sln.ide
+
+# SQLite runtime artifacts (journal files)
+*.db-shm
+*.db-wal
+*-journal
+
+# --- iOS / アプリ配布物 ---
+*.ipa
+*.app
+*.xcarchive
+
+# 署名・プロビジョニング（絶対コミットしない）
+*.p12
+*.mobileprovision
+*.certSigningRequest
+*.key
+*.keystore
+*.jks
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.vs/
+.DS_Store
+Thumbs.db
+
+# Rider workspace
+*.sln.DotSettings.user
