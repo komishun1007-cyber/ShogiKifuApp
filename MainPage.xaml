@@ -6,7 +6,9 @@
     Title="棋譜一覧">
 
     <Grid Padding="12">
-        <CollectionView x:Name="KifuList">
+        <CollectionView x:Name="KifuList"
+                SelectionMode="Single"
+                SelectionChanged="OnSelectionChanged">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <StackLayout Padding="10">

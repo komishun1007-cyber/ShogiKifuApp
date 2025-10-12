@@ -103,4 +103,16 @@ public partial class MainPage : ContentPage
         await DisplayAlert("完了", $"{record.Title} を保存しました。", "OK");
     }
 
+    private async void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection == null || e.CurrentSelection.Count == 0) return;
+        var item = e.CurrentSelection[0] as KifuRecord;
+        if (item == null) return;
+
+        // 遷移（Navigation.PushAsync を使うためには AppShell または NavigationPage が必要）
+        await Navigation.PushAsync(new Pages.KifuDetailPage(item));
+
+        // 選択解除（戻ってきたときのため）
+        ((CollectionView)sender).SelectedItem = null;
+    }
 }
