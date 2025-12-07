@@ -126,11 +126,43 @@ public static class KifuParser
 
     static bool kanjiToInt(char c, out int v)
     {
-        var map = new Dictionary<char,int>
+        var map = new Dictionary<char, int>
         {
-            ['一']=1,['二']=2,['三']=3,['四']=4,['五']=5,['六']=6,['七']=7,['八']=8,['九']=9
+            ['一'] = 1,
+            ['二'] = 2,
+            ['三'] = 3,
+            ['四'] = 4,
+            ['五'] = 5,
+            ['六'] = 6,
+            ['七'] = 7,
+            ['八'] = 8,
+            ['九'] = 9
         };
         if (map.TryGetValue(c, out v)) return true;
         v = 0; return false;
     }
+    
+    private static Move ParseMove(string text)
+{
+    // 例: "７六歩(77)" → to=(7,6), from=(7,7), piece="歩"
+    var regex = new Regex(@"([１-９])([一二三四五六七八九])(.+)\((\d)(\d)\)");
+    var match = regex.Match(text);
+    if (!match.Success) return new Move();
+
+    int toX = "１２３４５６７８９".IndexOf(match.Groups[1].Value) + 1;
+    int toY = "一二三四五六七八九".IndexOf(match.Groups[2].Value) + 1;
+    int fromX = int.Parse(match.Groups[4].Value);
+    int fromY = int.Parse(match.Groups[5].Value);
+    string piece = match.Groups[3].Value.Replace("成", "").Trim();
+
+    return new Move
+    {
+        FromX = fromX,
+        FromY = fromY,
+        ToX = toX,
+        ToY = toY,
+        Piece = piece,
+        IsPromote = text.Contains("成")
+    };
+}
 }

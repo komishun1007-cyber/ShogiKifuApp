@@ -12,4 +12,10 @@ public class Move
     public string Piece { get; set; } = ""; // 例: "歩","飛","角","金" 等
     public bool IsPromotion { get; set; } = false;
     public string Raw { get; set; } = ""; // 元のテキスト行
+
+        public int FromX { get; set; }
+    public int FromY { get; set; }
+    public int ToX { get; set; }
+    public int ToY { get; set; }
+    public bool IsPromote { get; set; } = false;
 }
