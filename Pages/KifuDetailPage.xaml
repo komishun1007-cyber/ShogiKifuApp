@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:ShogiKifuApp.Views"
+    x:Class="ShogiKifuApp.Pages.KifuDetailPage"
+    Title="棋譜詳細">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="12" Spacing="12">
+
+            <Label Text="{Binding Title}" FontSize="20" FontAttributes="Bold"/>
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="先手：" FontAttributes="Bold"/>
+                <Label Text="{Binding Sente}" />
+                <Label Text="後手：" FontAttributes="Bold" Margin="20,0,0,0"/>
+                <Label Text="{Binding Gote}" />
+            </HorizontalStackLayout>
+
+            <Label Text="対局日" FontAttributes="Bold"/>
+            <Label Text="{Binding Date, StringFormat='{0:yyyy/MM/dd HH:mm}'}" />
+
+            <Label Text="ファイル名等" FontAttributes="Bold"/>
+            <Label Text="{Binding Title}" />
+
+            <views:BoardView x:Name="BoardView" HeightRequest="320"/>
+            <Frame Padding="6" BorderColor="LightGray" CornerRadius="6" >
+                <Label Text="（盤面再生は次のステップで実装）" HorizontalOptions="Center"/>
+            </Frame>
+
+            <Label Text="棋譜本文" FontAttributes="Bold"/>
+            <Editor x:Name="KifuEditor"
+                    Text="{Binding KifuText}"
+                    AutoSize="TextChanges"
+                    HeightRequest="300"/>
+
+            <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                <Button Text="保存" Clicked="OnSaveClicked"/>
+                <Button Text="削除" Clicked="OnDeleteClicked" BackgroundColor="Tomato" TextColor="White"/>
+                <Button Text="再生(次へ)" Clicked="OnPlayNextClicked"/>
+                <Button Text="再生(戻る)" Clicked="OnPlayPrevClicked"/>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

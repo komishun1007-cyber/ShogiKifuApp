@@ -1,11 +1,18 @@
-﻿namespace ShogiKifuApp;
+﻿using ShogiKifuApp.Data;
+
+namespace ShogiKifuApp;
 
 public partial class App : Application
 {
-	public App()
-	{
-		InitializeComponent();
+    private static KifuDatabase? _database;
 
-		MainPage = new AppShell();
-	}
+    public static KifuDatabase Database =>
+        _database ??= new KifuDatabase();
+
+    public App()
+    {
+        InitializeComponent();
+
+        MainPage = new AppShell();
+    }
 }

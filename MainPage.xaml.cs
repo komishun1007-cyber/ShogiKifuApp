@@ -1,24 +1,118 @@
-﻿namespace ShogiKifuApp;
+﻿using ShogiKifuApp.Models;
+using System.Text.RegularExpressions;
+
+namespace ShogiKifuApp;
 
 public partial class MainPage : ContentPage
 {
-	int count = 0;
+    public MainPage()
+    {
+        InitializeComponent();
+    }
 
-	public MainPage()
-	{
-		InitializeComponent();
-	}
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
 
-	private void OnCounterClicked(object sender, EventArgs e)
-	{
-		count++;
+        // 旧: GetKifusAsync → 新: GetAllAsync
+        KifuList.ItemsSource = await App.Database.GetAllAsync();
+    }
 
-		if (count == 1)
-			CounterBtn.Text = $"Clicked {count} time";
-		else
-			CounterBtn.Text = $"Clicked {count} times";
+    private async void OnAddClicked(object sender, EventArgs e)
+    {
+        var newRecord = new KifuRecord
+        {
+            Moves = 0,
+            Date = DateTime.Now
+        };
 
-		SemanticScreenReader.Announce(CounterBtn.Text);
-	}
+        // 旧: SaveKifuAsync → 新: InsertAsync
+        await App.Database.InsertAsync(newRecord);
+
+        // 更新
+        KifuList.ItemsSource = await App.Database.GetAllAsync();
+    }
+
+ // ①ファイルからインポート
+    private async void OnImportClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var customFileType = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                { DevicePlatform.iOS, new[] { "public.text" } },
+                { DevicePlatform.Android, new[] { "text/plain" } },
+                { DevicePlatform.WinUI, new[] { ".txt", ".kif" } }
+            });
+
+            var result = await FilePicker.PickAsync(new PickOptions
+            {
+                PickerTitle = "棋譜ファイルを選択してください",
+                FileTypes = customFileType
+            });
+
+            if (result == null) return;
+
+            var text = await File.ReadAllTextAsync(result.FullPath);
+            await SaveKifuFromText(text, Path.GetFileNameWithoutExtension(result.FileName));
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("エラー", $"インポートに失敗しました:\n{ex.Message}", "OK");
+        }
+    }
+
+    // ②コピーペーストでインポート
+    private async void OnPasteClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            string pasted = await DisplayPromptAsync("棋譜貼り付け", "棋譜の内容を貼り付けてください：", 
+                                                     accept: "保存", cancel: "キャンセル", maxLength: 10000);
+
+            if (string.IsNullOrWhiteSpace(pasted)) return;
+
+            await SaveKifuFromText(pasted, "貼り付け棋譜");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("エラー", $"貼り付け処理に失敗しました:\n{ex.Message}", "OK");
+        }
+    }
+
+    // 共通処理：テキストから棋譜を保存
+    private async Task SaveKifuFromText(string text, string title)
+    {
+        string sente = Regex.Match(text, @"先手[:：](.+)").Groups[1].Value.Trim();
+        string gote = Regex.Match(text, @"後手[:：](.+)").Groups[1].Value.Trim();
+        string date = Regex.Match(text, @"開始日時[:：](.+)").Groups[1].Value.Trim();
+
+        var record = new KifuRecord
+        {
+            Title = title,
+            Sente = string.IsNullOrEmpty(sente) ? "不明" : sente,
+            Gote = string.IsNullOrEmpty(gote) ? "不明" : gote,
+            Date = DateTime.TryParse(date, out var d) ? d : DateTime.Now,
+            KifuText = text,
+            Moves = Regex.Matches(text, @"\d+\s").Count
+        };
+
+        await App.Database.InsertAsync(record);
+        KifuList.ItemsSource = await App.Database.GetAllAsync();
+
+        await DisplayAlert("完了", $"{record.Title} を保存しました。", "OK");
+    }
+
+    private async void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection == null || e.CurrentSelection.Count == 0) return;
+        var item = e.CurrentSelection[0] as KifuRecord;
+        if (item == null) return;
+
+        // 遷移（Navigation.PushAsync を使うためには AppShell または NavigationPage が必要）
+        await Navigation.PushAsync(new Pages.KifuDetailPage(item));
+
+        // 選択解除（戻ってきたときのため）
+        ((CollectionView)sender).SelectedItem = null;
+    }
 }
-
