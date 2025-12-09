@@ -13,8 +13,6 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
-        // 旧: GetKifusAsync → 新: GetAllAsync
         KifuList.ItemsSource = await App.Database.GetAllAsync();
     }
 
@@ -22,18 +20,15 @@ public partial class MainPage : ContentPage
     {
         var newRecord = new KifuRecord
         {
+            Title = "新規棋譜",
             Moves = 0,
             Date = DateTime.Now
         };
 
-        // 旧: SaveKifuAsync → 新: InsertAsync
         await App.Database.InsertAsync(newRecord);
-
-        // 更新
         KifuList.ItemsSource = await App.Database.GetAllAsync();
     }
 
- // ①ファイルからインポート
     private async void OnImportClicked(object sender, EventArgs e)
     {
         try
@@ -62,7 +57,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // ②コピーペーストでインポート
     private async void OnPasteClicked(object sender, EventArgs e)
     {
         try
@@ -80,8 +74,7 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // 共通処理：テキストから棋譜を保存
-    private async Task SaveKifuFromText(string text, string title)
+    private async Task SaveKifuFromText(string text, string defaultTitle)
     {
         string sente = Regex.Match(text, @"先手[:：](.+)").Groups[1].Value.Trim();
         string gote = Regex.Match(text, @"後手[:：](.+)").Groups[1].Value.Trim();
@@ -89,7 +82,7 @@ public partial class MainPage : ContentPage
 
         var record = new KifuRecord
         {
-            Title = title,
+            Title = defaultTitle,
             Sente = string.IsNullOrEmpty(sente) ? "不明" : sente,
             Gote = string.IsNullOrEmpty(gote) ? "不明" : gote,
             Date = DateTime.TryParse(date, out var d) ? d : DateTime.Now,
@@ -109,10 +102,8 @@ public partial class MainPage : ContentPage
         var item = e.CurrentSelection[0] as KifuRecord;
         if (item == null) return;
 
-        // 遷移（Navigation.PushAsync を使うためには AppShell または NavigationPage が必要）
         await Navigation.PushAsync(new Pages.KifuDetailPage(item));
 
-        // 選択解除（戻ってきたときのため）
         ((CollectionView)sender).SelectedItem = null;
     }
 }
