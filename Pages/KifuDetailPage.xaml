@@ -41,6 +41,9 @@
                 <Button Text="再生(戻る)" Clicked="OnPlayPrevClicked"/>
             </HorizontalStackLayout>
 
+            <!-- 再生位置表示ラベル -->
+            <Label x:Name="MoveLabel" Text="0手目 / 0手" HorizontalOptions="Center" FontAttributes="Italic" />
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
