@@ -90,10 +90,10 @@ public partial class BoardView : ContentView
     {
         try
         {
-            System.Diagnostics.Debug.WriteLine($"=== ApplyMove ===");
-            System.Diagnostics.Debug.WriteLine($"To: {move.ToFile},{move.ToRank}");
-            System.Diagnostics.Debug.WriteLine($"From: {move.FromFile},{move.FromRank}");
-            System.Diagnostics.Debug.WriteLine($"Piece: {move.Piece}");
+            System.Console.WriteLine($"=== ApplyMove ===");
+            System.Console.WriteLine($"To: {move.ToFile},{move.ToRank}");
+            System.Console.WriteLine($"From: {move.FromFile},{move.FromRank}");
+            System.Console.WriteLine($"Piece: {move.Piece}");
             
             // 現在の状態を保存
             var savedState = new BoardState(_board, move);
@@ -109,25 +109,25 @@ public partial class BoardView : ContentView
                 // 範囲チェック
                 if (fromF < 1 || fromF > 9 || fromR < 1 || fromR > 9)
                 {
-                    System.Diagnostics.Debug.WriteLine($"ERROR: 移動元が範囲外 ({fromF},{fromR})");
+                    System.Console.WriteLine($"ERROR: 移動元が範囲外 ({fromF},{fromR})");
                     return;
                 }
                 
                 piece = _board[fromF, fromR];
-                System.Diagnostics.Debug.WriteLine($"移動元の駒: {piece ?? "なし"}");
+                System.Console.WriteLine($"移動元の駒: {piece ?? "なし"}");
                 _board[fromF, fromR] = null;
             }
             else
             {
                 // 持ち駒から打つ
                 piece = move.Piece;
-                System.Diagnostics.Debug.WriteLine($"持ち駒から打つ: {piece}");
+                System.Console.WriteLine($"持ち駒から打つ: {piece}");
             }
 
             // 範囲チェック
             if (move.ToFile < 1 || move.ToFile > 9 || move.ToRank < 1 || move.ToRank > 9)
             {
-                System.Diagnostics.Debug.WriteLine($"ERROR: 移動先が範囲外 ({move.ToFile},{move.ToRank})");
+                System.Console.WriteLine($"ERROR: 移動先が範囲外 ({move.ToFile},{move.ToRank})");
                 return;
             }
 
@@ -135,20 +135,20 @@ public partial class BoardView : ContentView
             if (move.IsPromotion && piece != null)
             {
                 var promoted = PromotePiece(piece);
-                System.Diagnostics.Debug.WriteLine($"成り: {piece} → {promoted}");
+                System.Console.WriteLine($"成り: {piece} → {promoted}");
                 piece = promoted;
             }
 
             // 移動先に配置
-            System.Diagnostics.Debug.WriteLine($"移動先に配置: ({move.ToFile},{move.ToRank}) = {piece}");
+            System.Console.WriteLine($"移動先に配置: ({move.ToFile},{move.ToRank}) = {piece}");
             _board[move.ToFile, move.ToRank] = piece;
 
             UpdateDisplay();
-            System.Diagnostics.Debug.WriteLine("=== ApplyMove 完了 ===");
+            System.Console.WriteLine("=== ApplyMove 完了 ===");
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"ERROR in ApplyMove: {ex}");
+            System.Console.WriteLine($"ERROR in ApplyMove: {ex}");
         }
     }
 
