@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using System.Collections.Generic;  // ← 追加
+using System.Collections.Generic;
 using ShogiKifuApp.Models;
 
 namespace ShogiKifuApp.Parsers;
@@ -18,121 +18,222 @@ public static class KifuParser
         ['六'] = 6, ['七'] = 7, ['八'] = 8, ['九'] = 9
     };
 
+    public class KifData
+    {
+        public Dictionary<string, string> Header { get; set; } = new();
+        public List<string> Moves { get; set; } = new();
+    }
+
     public static KifuModel Parse(string text)
     {
+        System.Console.WriteLine("[Parse] start");
+
+        var kifData = ParseRaw(text);
+        System.Console.WriteLine($"[Parse] ParseRaw done Header={kifData.Header.Count}, Moves={kifData.Moves.Count}");
+
         var model = new KifuModel { RawText = text };
 
-        // ヘッダー情報の抽出
-        ExtractHeader(text, model);
-        
-        // 指し手の抽出
-        ExtractMoves(text, model);
+        ExtractHeaderToModel(kifData, model);
+        System.Console.WriteLine("[Parse] ExtractHeaderToModel done");
 
+        ExtractMovesFromList(kifData, model);
+        System.Console.WriteLine($"[Parse] ExtractMovesFromList done Moves={model.Moves.Count}");
+
+        System.Console.WriteLine("[Parse] end");
         return model;
     }
 
-    private static void ExtractHeader(string text, KifuModel model)
+    public static KifData ParseRaw(string text)
     {
-        // 先手・後手
-        var mSente = Regex.Match(text, @"先手[:：]\s*(.+)", RegexOptions.Multiline);
-        var mGote = Regex.Match(text, @"後手[:：]\s*(.+)", RegexOptions.Multiline);
-        var mDate = Regex.Match(text, @"開始日時[:：]\s*(.+)", RegexOptions.Multiline);
+        System.Console.WriteLine("[ParseRaw] start");
 
-        if (mSente.Success) 
-            model.Sente = mSente.Groups[1].Value.Trim();
-        if (mGote.Success) 
-            model.Gote = mGote.Groups[1].Value.Trim();
-        if (mDate.Success && DateTime.TryParse(mDate.Groups[1].Value.Trim(), out var d)) 
-            model.Date = d;
+        var kifData = new KifData();
+var lines = Regex.Split(text, @"(?=\n?\s*\d+\s)");
+            System.Console.WriteLine($"[ParseRaw] line count={lines.Length}");
 
-        model.Title = $"{model.Date:yyyy/MM/dd} {model.Sente} vs {model.Gote}";
+        bool inMoveSection = false;
+
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim();
+            System.Console.WriteLine($"[ParseRaw] line='{line}'");
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                if (!inMoveSection && kifData.Header.Count > 0)
+                {
+                    inMoveSection = true;
+                    System.Console.WriteLine("[ParseRaw] enter move section by empty line");
+                }
+                continue;
+            }
+
+            if (char.IsDigit(line[0]) || IsZenkakuDigit(line[0]))
+            {
+                inMoveSection = true;
+                kifData.Moves.Add(line);
+                System.Console.WriteLine($"[ParseRaw] add move '{line}'");
+                continue;
+            }
+
+            if (!inMoveSection)
+            {
+                System.Console.WriteLine("[ParseRaw] header line");
+                ParseHeaderLine(line, kifData.Header);
+            }
+        }
+
+        System.Console.WriteLine($"[ParseRaw] end Header={kifData.Header.Count}, Moves={kifData.Moves.Count}");
+        return kifData;
     }
 
-    private static void ExtractMoves(string text, KifuModel model)
+    private static void ParseHeaderLine(string line, Dictionary<string, string> header)
     {
-        var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-        
-        // "1 ７六歩(77)" のような行を抽出
-        var movePattern = new Regex(@"^\s*(\d+)[\s\.]+(.+?)(?:\s*\(|$)");
+        System.Console.WriteLine($"[ParseHeaderLine] line='{line}'");
 
-        foreach (var line in lines)
+        var separators = new[] { '：', ':' };
+        var separatorIndex = -1;
+
+        foreach (var sep in separators)
         {
-            var match = movePattern.Match(line);
-            if (!match.Success) continue;
-
-            var moveText = match.Groups[2].Value.Trim();
-            var move = ParseSingleMove(moveText);
-            
-            if (move != null)
-                model.Moves.Add(move);
+            var idx = line.IndexOf(sep);
+            if (idx > 0)
+            {
+                separatorIndex = idx;
+                break;
+            }
         }
+
+        if (separatorIndex > 0)
+        {
+            var key = line.Substring(0, separatorIndex).Trim();
+            var value = line.Substring(separatorIndex + 1).Trim();
+            System.Console.WriteLine($"[ParseHeaderLine] key='{key}', value='{value}'");
+
+            if (!string.IsNullOrWhiteSpace(key))
+                header[key] = value;
+        }
+        else
+        {
+            System.Console.WriteLine("[ParseHeaderLine] separator not found");
+        }
+    }
+
+    private static void ExtractHeaderToModel(KifData kifData, KifuModel model)
+    {
+        System.Console.WriteLine("[ExtractHeaderToModel] start");
+
+        if (kifData.Header.TryGetValue("先手", out var sente))
+            model.Sente = sente;
+        else if (kifData.Header.TryGetValue("下手", out sente))
+            model.Sente = sente;
+
+        if (kifData.Header.TryGetValue("後手", out var gote))
+            model.Gote = gote;
+        else if (kifData.Header.TryGetValue("上手", out gote))
+            model.Gote = gote;
+
+        if (kifData.Header.TryGetValue("開始日時", out var dateStr))
+        {
+            if (DateTime.TryParse(dateStr, out var date))
+                model.Date = date;
+        }
+
+        model.Title = !string.IsNullOrEmpty(model.Sente) && !string.IsNullOrEmpty(model.Gote)
+            ? $"{model.Date:yyyy/MM/dd} {model.Sente} vs {model.Gote}"
+            : $"{model.Date:yyyy/MM/dd}";
+
+        System.Console.WriteLine("[ExtractHeaderToModel] end");
+    }
+
+    private static void ExtractMovesFromList(KifData kifData, KifuModel model)
+    {
+        System.Console.WriteLine("[ExtractMovesFromList] start");
+
+        foreach (var moveText in kifData.Moves)
+        {
+            System.Console.WriteLine($"[ExtractMovesFromList] parse '{moveText}'");
+
+            var move = ParseSingleMove(moveText);
+            if (move != null)
+            {
+                model.Moves.Add(move);
+                System.Console.WriteLine("[ExtractMovesFromList] added");
+            }
+            else
+            {
+                System.Console.WriteLine("[ExtractMovesFromList] null");
+            }
+        }
+
+        System.Console.WriteLine("[ExtractMovesFromList] end");
     }
 
     private static Move? ParseSingleMove(string text)
     {
+        System.Console.WriteLine($"[ParseSingleMove] start '{text}'");
+
         try
         {
-            var move = new Move { Raw = text };
+            var match = Regex.Match(text, @"^\s*(\d+)\s+(.+)$");
+            System.Console.WriteLine($"[ParseSingleMove] regex1 success={match.Success}");
 
-            // "７六歩(77)" または "同　歩成(32)" のパターン
-            // 目的地: 全角数字2文字 or "同"
-            var destPattern = @"^([１-９])([一二三四五六七八九１-９])|^同";
-            var destMatch = Regex.Match(text, destPattern);
-
-            if (!destMatch.Success && !text.StartsWith("同"))
+            if (!match.Success)
                 return null;
 
-            // 目的地の座標
-            if (text.StartsWith("同"))
+            var moveText = match.Groups[2].Value.Trim();
+            System.Console.WriteLine($"[ParseSingleMove] moveText='{moveText}'");
+
+            if (moveText.Contains("投了") || moveText.Contains("中断") ||
+                moveText.Contains("時間切れ") || moveText.Contains("切れ負け"))
             {
-                // "同"の場合は前の手の座標を使う（ここでは未実装なのでスキップ）
+                System.Console.WriteLine("[ParseSingleMove] end move");
+                return null;
+            }
+
+            var move = new Move { Raw = text };
+
+            var destPattern = @"^([１-９])([一二三四五六七八九１-９])|^同";
+            var destMatch = Regex.Match(moveText, destPattern);
+            System.Console.WriteLine($"[ParseSingleMove] destMatch success={destMatch.Success}");
+
+            if (!destMatch.Success && !moveText.StartsWith("同"))
+                return null;
+
+            if (moveText.StartsWith("同"))
+            {
+                System.Console.WriteLine("[ParseSingleMove] 同 not implemented");
                 return null;
             }
 
             var fileChar = destMatch.Groups[1].Value[0];
             var rankChar = destMatch.Groups[2].Value[0];
+            System.Console.WriteLine($"[ParseSingleMove] to={fileChar}{rankChar}");
 
-            if (!TryConvertToNumber(fileChar, out var toFile) || 
+            if (!TryConvertToNumber(fileChar, out var toFile) ||
                 !TryConvertToNumber(rankChar, out var toRank))
                 return null;
 
             move.ToFile = toFile;
             move.ToRank = toRank;
 
-            // 駒の種類を抽出（"歩", "飛", "角" など）
-            var pieceMatch = Regex.Match(text, @"[歩香桂銀金角飛王玉と杏圭全馬龍]");
+            var pieceMatch = Regex.Match(moveText, @"[歩香桂銀金角飛王玉と杏圭全馬龍]");
+            System.Console.WriteLine($"[ParseSingleMove] pieceMatch={pieceMatch.Success}");
+
             if (pieceMatch.Success)
                 move.Piece = pieceMatch.Value;
 
-            // 成り判定
-            move.IsPromotion = text.Contains("成");
+            move.IsPromotion = moveText.Contains("成");
 
-            // 移動元 "(77)" や "(7七)" のパターン
             var fromPattern = @"\((\d)(\d)\)|\(([１-９])([一二三四五六七八九])\)";
-            var fromMatch = Regex.Match(text, fromPattern);
-
-            if (fromMatch.Success)
-            {
-                if (fromMatch.Groups[1].Success) // 半角数字
-                {
-                    move.FromFile = int.Parse(fromMatch.Groups[1].Value);
-                    move.FromRank = int.Parse(fromMatch.Groups[2].Value);
-                }
-                else if (fromMatch.Groups[3].Success) // 全角
-                {
-                    if (TryConvertToNumber(fromMatch.Groups[3].Value[0], out var ff) &&
-                        TryConvertToNumber(fromMatch.Groups[4].Value[0], out var rr))
-                    {
-                        move.FromFile = ff;
-                        move.FromRank = rr;
-                    }
-                }
-            }
+            var fromMatch = Regex.Match(moveText, fromPattern);
+            System.Console.WriteLine($"[ParseSingleMove] fromMatch={fromMatch.Success}");
 
             return move;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Console.WriteLine($"[ParseSingleMove] exception {ex}");
             return null;
         }
     }
@@ -150,5 +251,10 @@ public static class KifuParser
         }
         value = 0;
         return false;
+    }
+
+    private static bool IsZenkakuDigit(char c)
+    {
+        return ZenkakuDigits.ContainsKey(c);
     }
 }

@@ -47,7 +47,7 @@ public partial class KifuDetailPage : ContentPage
                           $"移動元: {mv.FromFile?.ToString() ?? "?"}{mv.FromRank?.ToString() ?? "?"}\n" +
                           $"成り: {mv.IsPromotion}";
             
-            System.Diagnostics.Debug.WriteLine(debugInfo);
+            System.Console.WriteLine(debugInfo);
             
             BoardView.ApplyMove(mv);
             UpdateMoveLabel();
@@ -55,7 +55,7 @@ public partial class KifuDetailPage : ContentPage
         catch (Exception ex)
         {
             await DisplayAlert("エラー", $"手を進められません:\n{ex.Message}", "OK");
-            System.Diagnostics.Debug.WriteLine($"Error: {ex}");
+            System.Console.WriteLine($"Error: {ex}");
         }
     }
 
@@ -99,14 +99,14 @@ public partial class KifuDetailPage : ContentPage
             _model = KifuParser.Parse(_record.KifuText ?? "");
             
             // パース結果をデバッグ出力
-            System.Diagnostics.Debug.WriteLine($"=== 棋譜パース結果 ===");
-            System.Diagnostics.Debug.WriteLine($"先手: {_model.Sente}");
-            System.Diagnostics.Debug.WriteLine($"後手: {_model.Gote}");
-            System.Diagnostics.Debug.WriteLine($"手数: {_model.Moves.Count}");
+            System.Console.WriteLine($"=== 棋譜パース結果 ===");
+            System.Console.WriteLine($"先手: {_model.Sente}");
+            System.Console.WriteLine($"後手: {_model.Gote}");
+            System.Console.WriteLine($"手数: {_model.Moves.Count}");
             
             if (_model.Moves.Count > 0)
             {
-                System.Diagnostics.Debug.WriteLine($"最初の手: {_model.Moves[0].Raw}");
+                System.Console.WriteLine($"最初の手: {_model.Moves[0].Raw}");
             }
             else
             {
@@ -121,7 +121,7 @@ public partial class KifuDetailPage : ContentPage
         catch (Exception ex)
         {
             await DisplayAlert("エラー", $"棋譜の解析に失敗しました:\n{ex.Message}", "OK");
-            System.Diagnostics.Debug.WriteLine($"Parse Error: {ex}");
+            System.Console.WriteLine($"Parse Error: {ex}");
         }
     }
 
