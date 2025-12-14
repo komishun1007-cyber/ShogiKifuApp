@@ -2,9 +2,55 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ShogiKifuApp.Views.BoardView">
-    <Grid x:Name="BoardGrid" 
-          RowSpacing="1" 
-          ColumnSpacing="1" 
-          BackgroundColor="Black"
-          Padding="4"/>
+    <VerticalStackLayout Spacing="8">
+        <!-- 後手の持ち駒 -->
+        <Frame Padding="8" BorderColor="Gray" CornerRadius="4">
+            <VerticalStackLayout>
+                <Label Text="後手の持ち駒" FontSize="12" FontAttributes="Bold" TextColor="Red"/>
+                <Label x:Name="GoteCapturedLabel" Text="なし" FontSize="14" LineBreakMode="WordWrap"/>
+            </VerticalStackLayout>
+        </Frame>
+
+        <!-- 将棋盤 -->
+        <Grid x:Name="BoardGrid" 
+              RowSpacing="1" 
+              ColumnSpacing="1" 
+              BackgroundColor="Black"
+              Padding="4"
+              HorizontalOptions="Center"/>
+
+        <!-- 先手の持ち駒 -->
+        <Frame Padding="8" BorderColor="Gray" CornerRadius="4">
+            <VerticalStackLayout>
+                <Label Text="先手の持ち駒" FontSize="12" FontAttributes="Bold" TextColor="Blue"/>
+                <Label x:Name="SenteCapturedLabel" Text="なし" FontSize="14" LineBreakMode="WordWrap"/>
+            </VerticalStackLayout>
+        </Frame>
+
+        <!-- スライダーと手数表示 -->
+        <VerticalStackLayout Spacing="4" Margin="0,8,0,0">
+            <Label x:Name="MoveCountLabel" 
+                   Text="0手目 / 0手" 
+                   HorizontalOptions="Center" 
+                   FontAttributes="Bold"
+                   FontSize="16"/>
+            
+            <Slider x:Name="MoveSlider"
+                    Minimum="0"
+                    Maximum="0"
+                    Value="0"
+                    MinimumTrackColor="Blue"
+                    MaximumTrackColor="LightGray"
+                    ValueChanged="OnSliderValueChanged"
+                    Margin="12,0"/>
+        </VerticalStackLayout>
+
+        <!-- 再生ボタン -->
+        <HorizontalStackLayout Spacing="8" HorizontalOptions="Center" Margin="0,4,0,0">
+            <Button x:Name="ResetButton" Text="⏮ 最初" WidthRequest="80" Clicked="OnResetClicked"/>
+            <Button x:Name="PrevButton" Text="◀ 戻る" WidthRequest="80" Clicked="OnPrevClicked"/>
+            <Button x:Name="NextButton" Text="進む ▶" WidthRequest="80" Clicked="OnNextClicked"/>
+            <Button x:Name="LastButton" Text="最後 ⏭" WidthRequest="80" Clicked="OnLastClicked"/>
+        </HorizontalStackLayout>
+    </VerticalStackLayout>
 </ContentView>

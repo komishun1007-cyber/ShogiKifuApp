@@ -20,13 +20,8 @@
             <Label Text="対局日" FontAttributes="Bold"/>
             <Label Text="{Binding Date, StringFormat='{0:yyyy/MM/dd HH:mm}'}" />
 
-            <Label Text="ファイル名等" FontAttributes="Bold"/>
-            <Label Text="{Binding Title}" />
-
-            <views:BoardView x:Name="BoardView" HeightRequest="320"/>
-            <Frame Padding="6" BorderColor="LightGray" CornerRadius="6" >
-                <Label Text="（盤面再生は次のステップで実装）" HorizontalOptions="Center"/>
-            </Frame>
+            <!-- 将棋盤と再生ボタンが統合されました -->
+            <views:BoardView x:Name="BoardView"/>
 
             <Label Text="棋譜本文" FontAttributes="Bold"/>
             <Editor x:Name="KifuEditor"
@@ -37,12 +32,7 @@
             <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
                 <Button Text="保存" Clicked="OnSaveClicked"/>
                 <Button Text="削除" Clicked="OnDeleteClicked" BackgroundColor="Tomato" TextColor="White"/>
-                <Button Text="再生(次へ)" Clicked="OnPlayNextClicked"/>
-                <Button Text="再生(戻る)" Clicked="OnPlayPrevClicked"/>
             </HorizontalStackLayout>
-
-            <!-- 再生位置表示ラベル -->
-            <Label x:Name="MoveLabel" Text="0手目 / 0手" HorizontalOptions="Center" FontAttributes="Italic" />
 
         </VerticalStackLayout>
     </ScrollView>
