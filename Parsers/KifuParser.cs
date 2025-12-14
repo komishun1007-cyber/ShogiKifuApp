@@ -169,75 +169,104 @@ var lines = Regex.Split(text, @"(?=\n?\s*\d+\s)");
         System.Console.WriteLine("[ExtractMovesFromList] end");
     }
 
-    private static Move? ParseSingleMove(string text)
+private static Move? ParseSingleMove(string text)
+{
+    System.Console.WriteLine($"[ParseSingleMove] start '{text}'");
+
+    try
     {
-        System.Console.WriteLine($"[ParseSingleMove] start '{text}'");
+        var match = Regex.Match(text, @"^\s*(\d+)\s+(.+)$");
+        System.Console.WriteLine($"[ParseSingleMove] regex1 success={match.Success}");
 
-        try
+        if (!match.Success)
+            return null;
+
+        var moveText = match.Groups[2].Value.Trim();
+        System.Console.WriteLine($"[ParseSingleMove] moveText='{moveText}'");
+
+        if (moveText.Contains("投了") || moveText.Contains("中断") ||
+            moveText.Contains("時間切れ") || moveText.Contains("切れ負け"))
         {
-            var match = Regex.Match(text, @"^\s*(\d+)\s+(.+)$");
-            System.Console.WriteLine($"[ParseSingleMove] regex1 success={match.Success}");
-
-            if (!match.Success)
-                return null;
-
-            var moveText = match.Groups[2].Value.Trim();
-            System.Console.WriteLine($"[ParseSingleMove] moveText='{moveText}'");
-
-            if (moveText.Contains("投了") || moveText.Contains("中断") ||
-                moveText.Contains("時間切れ") || moveText.Contains("切れ負け"))
-            {
-                System.Console.WriteLine("[ParseSingleMove] end move");
-                return null;
-            }
-
-            var move = new Move { Raw = text };
-
-            var destPattern = @"^([１-９])([一二三四五六七八九１-９])|^同";
-            var destMatch = Regex.Match(moveText, destPattern);
-            System.Console.WriteLine($"[ParseSingleMove] destMatch success={destMatch.Success}");
-
-            if (!destMatch.Success && !moveText.StartsWith("同"))
-                return null;
-
-            if (moveText.StartsWith("同"))
-            {
-                System.Console.WriteLine("[ParseSingleMove] 同 not implemented");
-                return null;
-            }
-
-            var fileChar = destMatch.Groups[1].Value[0];
-            var rankChar = destMatch.Groups[2].Value[0];
-            System.Console.WriteLine($"[ParseSingleMove] to={fileChar}{rankChar}");
-
-            if (!TryConvertToNumber(fileChar, out var toFile) ||
-                !TryConvertToNumber(rankChar, out var toRank))
-                return null;
-
-            move.ToFile = toFile;
-            move.ToRank = toRank;
-
-            var pieceMatch = Regex.Match(moveText, @"[歩香桂銀金角飛王玉と杏圭全馬龍]");
-            System.Console.WriteLine($"[ParseSingleMove] pieceMatch={pieceMatch.Success}");
-
-            if (pieceMatch.Success)
-                move.Piece = pieceMatch.Value;
-
-            move.IsPromotion = moveText.Contains("成");
-
-            var fromPattern = @"\((\d)(\d)\)|\(([１-９])([一二三四五六七八九])\)";
-            var fromMatch = Regex.Match(moveText, fromPattern);
-            System.Console.WriteLine($"[ParseSingleMove] fromMatch={fromMatch.Success}");
-
-            return move;
-        }
-        catch (Exception ex)
-        {
-            System.Console.WriteLine($"[ParseSingleMove] exception {ex}");
+            System.Console.WriteLine("[ParseSingleMove] end move");
             return null;
         }
-    }
 
+        var move = new Move { Raw = text };
+
+        var destPattern = @"^([１-９])([一二三四五六七八九１-９])|^同";
+        var destMatch = Regex.Match(moveText, destPattern);
+        System.Console.WriteLine($"[ParseSingleMove] destMatch success={destMatch.Success}");
+
+        if (!destMatch.Success && !moveText.StartsWith("同"))
+            return null;
+
+        if (moveText.StartsWith("同"))
+        {
+            System.Console.WriteLine("[ParseSingleMove] 同 not implemented");
+            return null;
+        }
+
+        var fileChar = destMatch.Groups[1].Value[0];
+        var rankChar = destMatch.Groups[2].Value[0];
+        System.Console.WriteLine($"[ParseSingleMove] to={fileChar}{rankChar}");
+
+        if (!TryConvertToNumber(fileChar, out var toFile) ||
+            !TryConvertToNumber(rankChar, out var toRank))
+            return null;
+
+        move.ToFile = toFile;
+        move.ToRank = toRank;
+
+        var pieceMatch = Regex.Match(moveText, @"[歩香桂銀金角飛王玉と杏圭全馬龍]");
+        System.Console.WriteLine($"[ParseSingleMove] pieceMatch={pieceMatch.Success}");
+
+        if (pieceMatch.Success)
+            move.Piece = pieceMatch.Value;
+
+        move.IsPromotion = moveText.Contains("成");
+
+        // 移動元の座標をパース
+        var fromPattern = @"\((\d)(\d)\)|\(([１-９])([一二三四五六七八九])\)";
+        var fromMatch = Regex.Match(moveText, fromPattern);
+        System.Console.WriteLine($"[ParseSingleMove] fromMatch={fromMatch.Success}");
+
+        if (fromMatch.Success)
+        {
+            // 半角数字の場合
+            if (!string.IsNullOrEmpty(fromMatch.Groups[1].Value))
+            {
+                if (int.TryParse(fromMatch.Groups[1].Value, out var fromFile) &&
+                    int.TryParse(fromMatch.Groups[2].Value, out var fromRank))
+                {
+                    move.FromFile = fromFile;
+                    move.FromRank = fromRank;
+                    System.Console.WriteLine($"[ParseSingleMove] from={fromFile}{fromRank} (半角)");
+                }
+            }
+            // 全角数字の場合
+            else if (!string.IsNullOrEmpty(fromMatch.Groups[3].Value))
+            {
+                var fromFileChar = fromMatch.Groups[3].Value[0];
+                var fromRankChar = fromMatch.Groups[4].Value[0];
+                
+                if (TryConvertToNumber(fromFileChar, out var fromFile) &&
+                    TryConvertToNumber(fromRankChar, out var fromRank))
+                {
+                    move.FromFile = fromFile;
+                    move.FromRank = fromRank;
+                    System.Console.WriteLine($"[ParseSingleMove] from={fromFile}{fromRank} (全角)");
+                }
+            }
+        }
+
+        return move;
+    }
+    catch (Exception ex)
+    {
+        System.Console.WriteLine($"[ParseSingleMove] exception {ex}");
+        return null;
+    }
+}
     private static bool TryConvertToNumber(char c, out int value)
     {
         if (ZenkakuDigits.TryGetValue(c, out value))
