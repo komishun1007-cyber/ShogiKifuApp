@@ -27,23 +27,37 @@
             </VerticalStackLayout>
         </Frame>
 
-        <!-- スライダーと手数表示 -->
-        <VerticalStackLayout Spacing="4" Margin="0,8,0,0">
-            <Label x:Name="MoveCountLabel" 
-                   Text="0手目 / 0手" 
-                   HorizontalOptions="Center" 
-                   FontAttributes="Bold"
-                   FontSize="16"/>
-            
-            <Slider x:Name="MoveSlider"
-                    Minimum="0"
-                    Maximum="0"
-                    Value="0"
-                    MinimumTrackColor="Blue"
-                    MaximumTrackColor="LightGray"
-                    ValueChanged="OnSliderValueChanged"
-                    Margin="12,0"/>
-        </VerticalStackLayout>
+        <!-- 手数表示 -->
+        <Label x:Name="MoveCountLabel" 
+               Text="0手目 / 0手" 
+               HorizontalOptions="Center" 
+               FontAttributes="Bold"
+               FontSize="16"
+               Margin="0,8,0,0"/>
+
+        <!-- 指し手スライダー表示 -->
+        <Frame Padding="8" BorderColor="LightGray" CornerRadius="8" Margin="12,0">
+            <VerticalStackLayout Spacing="4">
+                <!-- 前後の指し手表示 -->
+                <Grid ColumnDefinitions="*,*,*,*,*" RowDefinitions="Auto" ColumnSpacing="4">
+                    <Label Grid.Column="0" x:Name="Move1Label" Text="" FontSize="12" TextColor="Gray" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="1" x:Name="Move2Label" Text="" FontSize="12" TextColor="Gray" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="2" x:Name="Move3Label" Text="" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="3" x:Name="Move4Label" Text="" FontSize="12" TextColor="Gray" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="4" x:Name="Move5Label" Text="" FontSize="12" TextColor="Gray" HorizontalTextAlignment="Center"/>
+                </Grid>
+                
+                <!-- スライダー -->
+                <Slider x:Name="MoveSlider"
+                        Minimum="0"
+                        Maximum="0"
+                        Value="0"
+                        MinimumTrackColor="Blue"
+                        MaximumTrackColor="LightGray"
+                        ValueChanged="OnSliderValueChanged"
+                        Margin="0,4,0,0"/>
+            </VerticalStackLayout>
+        </Frame>
 
         <!-- 再生ボタン -->
         <HorizontalStackLayout Spacing="8" HorizontalOptions="Center" Margin="0,4,0,0">

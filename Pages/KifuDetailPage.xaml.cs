@@ -20,19 +20,18 @@ public partial class KifuDetailPage : ContentPage
         base.OnAppearing();
         ParseKifuAndInitBoard();
     }
-
     private async void ParseKifuAndInitBoard()
     {
         try
         {
             _model = KifuParser.Parse(_record.KifuText ?? "");
-            
+
             // パース結果をデバッグ出力
             System.Console.WriteLine($"=== 棋譜パース結果 ===");
             System.Console.WriteLine($"先手: {_model.Sente}");
             System.Console.WriteLine($"後手: {_model.Gote}");
             System.Console.WriteLine($"手数: {_model.Moves.Count}");
-            
+
             if (_model.Moves.Count > 0)
             {
                 System.Console.WriteLine($"最初の手: {_model.Moves[0].Raw}");
@@ -41,7 +40,7 @@ public partial class KifuDetailPage : ContentPage
             {
                 await DisplayAlert("警告", "棋譜から手が抽出できませんでした", "OK");
             }
-            
+
             BoardView.ResetHistory();
             BoardView.SetInitialPosition();
             BoardView.SetMoves(_model.Moves);
@@ -50,20 +49,6 @@ public partial class KifuDetailPage : ContentPage
         {
             await DisplayAlert("エラー", $"棋譜の解析に失敗しました:\n{ex.Message}", "OK");
             System.Console.WriteLine($"Parse Error: {ex}");
-        }
-    }
-
-    private async void OnSaveClicked(object sender, EventArgs e)
-    {
-        try
-        {
-            _record.KifuText = KifuEditor.Text ?? string.Empty;
-            await App.Database.UpdateAsync(_record);
-            await DisplayAlert("完了", "保存しました", "OK");
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("エラー", ex.Message, "OK");
         }
     }
 

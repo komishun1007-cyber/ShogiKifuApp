@@ -15,6 +15,9 @@ public partial class BoardView : ContentView
     // 表示用のLabel [file][rank]
     private readonly Label[,] _cells = new Label[10, 10];
     
+    // 最後の手の座標
+    private (int file, int rank)? _lastMovePosition = null;
+    
     // 履歴スタック
     private readonly Stack<BoardState> _history = new Stack<BoardState>();
     
@@ -26,6 +29,10 @@ public partial class BoardView : ContentView
     private List<Move> _allMoves = new List<Move>();
     private int _currentMoveIndex = -1;
     private bool _isUpdatingSlider = false;
+
+    // 色定義
+    private readonly Color _normalCellColor = Color.FromArgb("#F5DEB3");
+    private readonly Color _highlightCellColor = Color.FromArgb("#ADD8E6"); // 薄い青色
 
     // イベント
     public event EventHandler<int>? MoveIndexChanged;
@@ -55,7 +62,7 @@ public partial class BoardView : ContentView
                 {
                     HorizontalTextAlignment = TextAlignment.Center,
                     VerticalTextAlignment = TextAlignment.Center,
-                    BackgroundColor = Color.FromArgb("#F5DEB3"),
+                    BackgroundColor = _normalCellColor,
                     FontSize = 18,
                     FontAttributes = FontAttributes.Bold,
                     Padding = 2,
@@ -82,6 +89,9 @@ public partial class BoardView : ContentView
         // 持ち駒クリア
         _senteCaptured.Clear();
         _goteCaptured.Clear();
+        
+        // ハイライトクリア
+        _lastMovePosition = null;
 
         // 標準的な初期配置
         // 後手（上側）- 所有者をfalseに設定
@@ -134,6 +144,7 @@ public partial class BoardView : ContentView
         _isUpdatingSlider = false;
         
         UpdateMoveLabel();
+        UpdateMoveSliderDisplay();
     }
 
     public void ApplyMove(Move move)
@@ -149,7 +160,7 @@ public partial class BoardView : ContentView
             bool isSenteMove = (_currentMoveIndex + 1) % 2 == 1;
             
             // 現在の状態を保存
-            var savedState = new BoardState(_board, _pieceOwner, move, _senteCaptured, _goteCaptured);
+            var savedState = new BoardState(_board, _pieceOwner, move, _senteCaptured, _goteCaptured, _lastMovePosition);
             _history.Push(savedState);
 
             // 移動先の駒を取得（取った駒）
@@ -240,6 +251,9 @@ public partial class BoardView : ContentView
             System.Console.WriteLine($"移動先に配置: ({move.ToFile},{move.ToRank}) = {piece} (所有者: {(pieceOwner ? "先手" : "後手")})");
             _board[move.ToFile, move.ToRank] = piece;
             _pieceOwner[move.ToFile, move.ToRank] = pieceOwner;
+            
+            // 最後の手の位置を更新
+            _lastMovePosition = (move.ToFile, move.ToRank);
 
             UpdateDisplay();
             System.Console.WriteLine("=== ApplyMove 完了 ===");
@@ -255,7 +269,7 @@ public partial class BoardView : ContentView
         if (_history.Count == 0) return;
 
         var state = _history.Pop();
-        state.RestoreTo(_board, _pieceOwner, _senteCaptured, _goteCaptured);
+        state.RestoreTo(_board, _pieceOwner, _senteCaptured, _goteCaptured, out _lastMovePosition);
         UpdateDisplay();
     }
 
@@ -265,6 +279,7 @@ public partial class BoardView : ContentView
         _currentMoveIndex = -1;
         SetInitialPosition();
         UpdateMoveLabel();
+        UpdateMoveSliderDisplay();
         
         _isUpdatingSlider = true;
         MoveSlider.Value = 0;
@@ -280,6 +295,18 @@ public partial class BoardView : ContentView
                 var piece = _board[file, rank];
                 var owner = _pieceOwner[file, rank];
                 var cell = _cells[file, rank];
+                
+                // 背景色の設定（最後の手をハイライト）
+                if (_lastMovePosition.HasValue && 
+                    _lastMovePosition.Value.file == file && 
+                    _lastMovePosition.Value.rank == rank)
+                {
+                    cell.BackgroundColor = _highlightCellColor;
+                }
+                else
+                {
+                    cell.BackgroundColor = _normalCellColor;
+                }
                 
                 if (string.IsNullOrEmpty(piece) || !owner.HasValue)
                 {
@@ -355,6 +382,55 @@ public partial class BoardView : ContentView
         }
     }
 
+    private void UpdateMoveSliderDisplay()
+    {
+        // 現在の手の前後2手を表示
+        int currentIndex = _currentMoveIndex;
+        
+        // 各ラベルをクリア
+        Move1Label.Text = "";
+        Move2Label.Text = "";
+        Move3Label.Text = "";
+        Move4Label.Text = "";
+        Move5Label.Text = "";
+        
+        // 前後2手の範囲を計算
+        for (int offset = -2; offset <= 2; offset++)
+        {
+            int index = currentIndex + offset;
+            Label? label = offset switch
+            {
+                -2 => Move1Label,
+                -1 => Move2Label,
+                0 => Move3Label,
+                1 => Move4Label,
+                2 => Move5Label,
+                _ => null
+            };
+            
+            if (label != null)
+            {
+                if (index >= 0 && index < _allMoves.Count)
+                {
+                    var move = _allMoves[index];
+                    label.Text = $"{index + 1}.{FormatMoveText(move)}";
+                }
+                else if (index == -1)
+                {
+                    label.Text = "0.初期";
+                }
+            }
+        }
+    }
+
+    private string FormatMoveText(Move move)
+    {
+        var result = $"{move.ToFile}{move.ToRank}{move.Piece}";
+        if (move.IsPromotion)
+            result += "成";
+        return result;
+    }
+
     private string PromotePiece(string piece)
     {
         return piece switch
@@ -413,6 +489,7 @@ public partial class BoardView : ContentView
         }
         
         UpdateMoveLabel();
+        UpdateMoveSliderDisplay();
         MoveIndexChanged?.Invoke(this, _currentMoveIndex);
     }
 
@@ -430,6 +507,7 @@ public partial class BoardView : ContentView
         UndoMove();
         _currentMoveIndex--;
         UpdateMoveLabel();
+        UpdateMoveSliderDisplay();
         
         _isUpdatingSlider = true;
         MoveSlider.Value = _currentMoveIndex + 1;
@@ -445,6 +523,7 @@ public partial class BoardView : ContentView
         _currentMoveIndex++;
         ApplyMove(_allMoves[_currentMoveIndex]);
         UpdateMoveLabel();
+        UpdateMoveSliderDisplay();
         
         _isUpdatingSlider = true;
         MoveSlider.Value = _currentMoveIndex + 1;
@@ -461,6 +540,7 @@ public partial class BoardView : ContentView
             ApplyMove(_allMoves[_currentMoveIndex]);
         }
         UpdateMoveLabel();
+        UpdateMoveSliderDisplay();
         
         _isUpdatingSlider = true;
         MoveSlider.Value = _currentMoveIndex + 1;
@@ -475,12 +555,16 @@ public partial class BoardView : ContentView
         private readonly bool?[,] _ownerCopy = new bool?[10, 10];
         private readonly Dictionary<string, int> _senteCapturedCopy = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _goteCapturedCopy = new Dictionary<string, int>();
+        private readonly (int file, int rank)? _lastMovePositionCopy;
         public Move Move { get; }
 
         public BoardState(string?[,] board, bool?[,] owner, Move move, 
-            Dictionary<string, int> senteCaptured, Dictionary<string, int> goteCaptured)
+            Dictionary<string, int> senteCaptured, Dictionary<string, int> goteCaptured,
+            (int file, int rank)? lastMovePosition)
         {
             Move = move;
+            _lastMovePositionCopy = lastMovePosition;
+            
             // 配列を手動でコピー
             for (int f = 0; f < 10; f++)
                 for (int r = 0; r < 10; r++)
@@ -497,7 +581,8 @@ public partial class BoardView : ContentView
         }
 
         public void RestoreTo(string?[,] board, bool?[,] owner,
-            Dictionary<string, int> senteCaptured, Dictionary<string, int> goteCaptured)
+            Dictionary<string, int> senteCaptured, Dictionary<string, int> goteCaptured,
+            out (int file, int rank)? lastMovePosition)
         {
             for (int f = 0; f < 10; f++)
                 for (int r = 0; r < 10; r++)
@@ -513,6 +598,8 @@ public partial class BoardView : ContentView
             goteCaptured.Clear();
             foreach (var kvp in _goteCapturedCopy)
                 goteCaptured[kvp.Key] = kvp.Value;
+            
+            lastMovePosition = _lastMovePositionCopy;
         }
     }
 }
