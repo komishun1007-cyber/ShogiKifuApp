@@ -26,11 +26,11 @@
             <Label Text="棋譜本文" FontAttributes="Bold"/>
             <Editor x:Name="KifuEditor"
                     Text="{Binding KifuText}"
+                    IsReadOnly="True"
                     AutoSize="TextChanges"
                     HeightRequest="300"/>
 
             <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
-                <Button Text="保存" Clicked="OnSaveClicked"/>
                 <Button Text="削除" Clicked="OnDeleteClicked" BackgroundColor="Tomato" TextColor="White"/>
             </HorizontalStackLayout>
 
