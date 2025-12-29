@@ -425,12 +425,9 @@ public partial class BoardView : ContentView
 
     private string FormatMoveText(Move move)
     {
-        var result = $"{move.ToFile}{move.ToRank}{move.Piece}";
-        if (move.IsPromotion)
-            result += "成";
-        return result;
+        return move.ShortDisplay;
     }
-
+    
     private string PromotePiece(string piece)
     {
         return piece switch
