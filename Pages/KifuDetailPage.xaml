@@ -9,16 +9,44 @@
     <ScrollView>
         <VerticalStackLayout Padding="12" Spacing="12">
 
-            <Label Text="{Binding Title}" FontSize="20" FontAttributes="Bold"/>
-            <HorizontalStackLayout Spacing="10">
-                <Label Text="先手：" FontAttributes="Bold"/>
-                <Label Text="{Binding Sente}" />
-                <Label Text="後手：" FontAttributes="Bold" Margin="20,0,0,0"/>
-                <Label Text="{Binding Gote}" />
-            </HorizontalStackLayout>
-
-            <Label Text="対局日" FontAttributes="Bold"/>
-            <Label Text="{Binding Date, StringFormat='{0:yyyy/MM/dd HH:mm}'}" />
+            <!-- 対局情報 -->
+            <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="12">
+                    
+                    <!-- 先手情報 -->
+                    <Label Grid.Row="0" Grid.Column="0" Text="先手：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="0" Grid.Column="1" x:Name="SenteInfoLabel" Text="" VerticalOptions="Center"/>
+                    
+                    <!-- 後手情報 -->
+                    <Label Grid.Row="1" Grid.Column="0" Text="後手：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="1" Grid.Column="1" x:Name="GoteInfoLabel" Text="" VerticalOptions="Center"/>
+                    
+                    <!-- 開始日時 -->
+                    <Label Grid.Row="2" Grid.Column="0" Text="開始日時：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="2" Grid.Column="1" x:Name="StartDateLabel" Text="" VerticalOptions="Center"/>
+                    
+                    <!-- 棋戦 -->
+                    <Label Grid.Row="3" Grid.Column="0" Text="棋戦：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="3" Grid.Column="1" x:Name="EventLabel" Text="" VerticalOptions="Center"/>
+                    
+                    <!-- 持ち時間 -->
+                    <Label Grid.Row="4" Grid.Column="0" Text="持ち時間：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="4" Grid.Column="1" x:Name="TimeLimitLabel" Text="" VerticalOptions="Center"/>
+                    
+                    <!-- 総手数 -->
+                    <Label Grid.Row="5" Grid.Column="0" Text="総手数：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="5" Grid.Column="1" x:Name="TotalMovesLabel" Text="" VerticalOptions="Center"/>
+                    
+                    <!-- 先手手筋 -->
+                    <Label Grid.Row="6" Grid.Column="0" Text="▲手筋：" FontAttributes="Bold" VerticalOptions="Start" Margin="0,4,0,0"/>
+                    <Label Grid.Row="6" Grid.Column="1" x:Name="SenteTesujisLabel" Text="" LineBreakMode="WordWrap" VerticalOptions="Start" Margin="0,4,0,0"/>
+                    
+                    <!-- 後手手筋 -->
+                    <Label Grid.Row="7" Grid.Column="0" Text="△手筋：" FontAttributes="Bold" VerticalOptions="Start" Margin="0,4,0,0"/>
+                    <Label Grid.Row="7" Grid.Column="1" x:Name="GoteTesujisLabel" Text="" LineBreakMode="WordWrap" VerticalOptions="Start" Margin="0,4,0,0"/>
+                    
+                </Grid>
+            </Frame>
 
             <!-- 将棋盤と再生ボタンが統合されました -->
             <views:BoardView x:Name="BoardView"/>
