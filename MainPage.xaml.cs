@@ -1,4 +1,5 @@
 ﻿using ShogiKifuApp.Models;
+using ShogiKifuApp.Parsers;
 using System.Text.RegularExpressions;
 
 namespace ShogiKifuApp;
@@ -61,10 +62,21 @@ public partial class MainPage : ContentPage
     {
         try
         {
-            string pasted = await DisplayPromptAsync("棋譜貼り付け", "棋譜の内容を貼り付けてください：", 
-                                                     accept: "保存", cancel: "キャンセル", maxLength: 10000);
+            // クリップボードから取得
+            var hasText = await Clipboard.Default.GetTextAsync();
+            if (string.IsNullOrWhiteSpace(hasText))
+            {
+                await DisplayAlert("エラー", "クリップボードにテキストがありません", "OK");
+                return;
+            }
 
-            if (string.IsNullOrWhiteSpace(pasted)) return;
+            var pasted = await Clipboard.Default.GetTextAsync();
+            
+            if (string.IsNullOrWhiteSpace(pasted))
+            {
+                await DisplayAlert("エラー", "クリップボードが空です", "OK");
+                return;
+            }
 
             await SaveKifuFromText(pasted, "貼り付け棋譜");
         }
@@ -76,24 +88,57 @@ public partial class MainPage : ContentPage
 
     private async Task SaveKifuFromText(string text, string defaultTitle)
     {
-        string sente = Regex.Match(text, @"先手[:：](.+)").Groups[1].Value.Trim();
-        string gote = Regex.Match(text, @"後手[:：](.+)").Groups[1].Value.Trim();
-        string date = Regex.Match(text, @"開始日時[:：](.+)").Groups[1].Value.Trim();
-
-        var record = new KifuRecord
+        try
         {
-            Title = defaultTitle,
-            Sente = string.IsNullOrEmpty(sente) ? "不明" : sente,
-            Gote = string.IsNullOrEmpty(gote) ? "不明" : gote,
-            Date = DateTime.TryParse(date, out var d) ? d : DateTime.Now,
-            KifuText = text,
-            Moves = Regex.Matches(text, @"\d+\s").Count
-        };
+            // KifuParserを使って解析
+            var model = KifuParser.Parse(text);
+            var kifData = KifuParser.ParseRaw(text);
 
-        await App.Database.InsertAsync(record);
-        KifuList.ItemsSource = await App.Database.GetAllAsync();
+            // ヘッダーから情報を抽出
+            string sente = ExtractName(kifData.Header.GetValueOrDefault("先手", 
+                                      kifData.Header.GetValueOrDefault("下手", "不明")));
+            string gote = ExtractName(kifData.Header.GetValueOrDefault("後手", 
+                                     kifData.Header.GetValueOrDefault("上手", "不明")));
+            string dateStr = kifData.Header.GetValueOrDefault("開始日時", "");
+            string winner = kifData.Header.GetValueOrDefault("勝者", "");
 
-        await DisplayAlert("完了", $"{record.Title} を保存しました。", "OK");
+            // 勝者の変換（▲→先手、△→後手）
+            string winnerText = winner switch
+            {
+                "▲" => "先手",
+                "△" => "後手",
+                _ => ""
+            };
+
+            var record = new KifuRecord
+            {
+                Title = defaultTitle,
+                Sente = sente,
+                Gote = gote,
+                Date = DateTime.TryParse(dateStr, out var d) ? d : DateTime.Now,
+                KifuText = text,
+                Moves = model.Moves.Count,
+                Winner = winnerText,
+                Result = kifData.Header.GetValueOrDefault("結末", "")
+            };
+
+            await App.Database.InsertAsync(record);
+            KifuList.ItemsSource = await App.Database.GetAllAsync();
+
+            await DisplayAlert("完了", $"{record.DisplayTitle} を保存しました。\n手数: {record.Moves}手", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("エラー", $"棋譜の解析に失敗しました:\n{ex.Message}", "OK");
+            System.Console.WriteLine($"Error: {ex}");
+        }
+    }
+
+    private string ExtractName(string fullText)
+    {
+        // 「名前 段位」形式から名前だけを抽出
+        var match = Regex.Match(fullText, @"^([^\s]+)");
+        return match.Success ? match.Groups[1].Value : fullText;
     }
 
     private async void OnSelectionChanged(object sender, SelectionChangedEventArgs e)

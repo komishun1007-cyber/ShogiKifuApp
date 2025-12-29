@@ -16,13 +16,11 @@ public class KifuRecord
     
     public int Moves { get; set; }
     public string Result { get; set; } = "";
+    public string Winner { get; set; } = ""; // "先手", "後手", ""
     public string KifuText { get; set; } = "";
     public string Notes { get; set; } = "";
-
-    // Titleを保存可能なプロパティに変更
     public string Title { get; set; } = "";
 
-    // 表示用の読み取り専用プロパティ
     [Ignore]
     public string DisplayTitle => string.IsNullOrEmpty(Title)
         ? (string.IsNullOrEmpty(Sente) || string.IsNullOrEmpty(Gote)
@@ -31,5 +29,34 @@ public class KifuRecord
         : Title;
     
     [Ignore]
-    public string Subtitle => $"{Date:yyyy/MM/dd} - {Moves}手{(string.IsNullOrEmpty(Result) ? "" : " - " + Result)}";
+    public string Subtitle
+    {
+        get
+        {
+            var parts = new List<string>
+            {
+                $"{Date:yyyy/MM/dd}",
+                $"{Moves}手"
+            };
+            
+            if (!string.IsNullOrEmpty(Winner))
+            {
+                parts.Add($"{Winner}勝ち");
+            }
+            else if (!string.IsNullOrEmpty(Result))
+            {
+                parts.Add(Result);
+            }
+            
+            return string.Join(" - ", parts);
+        }
+    }
+    
+    [Ignore]
+    public string WinnerSymbol => Winner switch
+    {
+        "先手" => "▲",
+        "後手" => "△",
+        _ => ""
+    };
 }
