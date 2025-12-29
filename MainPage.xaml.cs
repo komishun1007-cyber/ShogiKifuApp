@@ -87,61 +87,80 @@ private async void OnPasteClicked(object sender, EventArgs e)
     }
 }
 
-private async Task SaveKifuFromText(string text, string defaultTitle)
-{
-    try
+    private async Task SaveKifuFromText(string text, string defaultTitle)
     {
-        var model = KifuParser.Parse(text);
-        var kifData = KifuParser.ParseRaw(text);
-
-        string sente = ExtractName(kifData.Header.GetValueOrDefault("先手", 
-                                  kifData.Header.GetValueOrDefault("下手", "不明")));
-        string gote = ExtractName(kifData.Header.GetValueOrDefault("後手", 
-                                 kifData.Header.GetValueOrDefault("上手", "不明")));
-        string dateStr = kifData.Header.GetValueOrDefault("開始日時", "");
-        string winner = kifData.Header.GetValueOrDefault("勝者", "");
-        
-        // 棋戦名・持ち時間を抽出
-        string tournament = kifData.Header.GetValueOrDefault("棋戦", "");
-        string timeControl = kifData.Header.GetValueOrDefault("持ち時間", "");
-
-        string winnerText = winner switch
+        try
         {
-            "▲" => "先手",
-            "△" => "後手",
-            _ => ""
-        };
+            var model = KifuParser.Parse(text);
+            var kifData = KifuParser.ParseRaw(text);
 
-        var record = new KifuRecord
+            string sente = ExtractName(kifData.Header.GetValueOrDefault("先手",
+                                      kifData.Header.GetValueOrDefault("下手", "不明")));
+            string gote = ExtractName(kifData.Header.GetValueOrDefault("後手",
+                                     kifData.Header.GetValueOrDefault("上手", "不明")));
+            string dateStr = kifData.Header.GetValueOrDefault("開始日時", "");
+            string winner = kifData.Header.GetValueOrDefault("勝者", "");
+
+            // 棋戦名・持ち時間を抽出
+            string tournament = kifData.Header.GetValueOrDefault("棋戦", "");
+            string timeControl = kifData.Header.GetValueOrDefault("持ち時間", "");
+
+            // 戦法を抽出（最初の一つのみ）
+            string senteStrategy = ExtractFirstStrategy(kifData.Header.GetValueOrDefault("先手戦型",
+                                                        kifData.Header.GetValueOrDefault("▲戦型", "")));
+            string goteStrategy = ExtractFirstStrategy(kifData.Header.GetValueOrDefault("後手戦型",
+                                                       kifData.Header.GetValueOrDefault("△戦型", "")));
+
+            string winnerText = winner switch
+            {
+                "▲" => "先手",
+                "△" => "後手",
+                _ => ""
+            };
+
+            var record = new KifuRecord
+            {
+                Title = defaultTitle,
+                Sente = sente,
+                Gote = gote,
+                Date = DateTime.TryParse(dateStr, out var d) ? d : DateTime.Now,
+                KifuText = text,
+                Moves = model.Moves.Count,
+                Winner = winnerText,
+                Result = kifData.Header.GetValueOrDefault("結末", ""),
+                Tournament = tournament,
+                TimeControl = timeControl,
+                SenteStrategy = senteStrategy,
+                GoteStrategy = goteStrategy
+            };
+
+            await App.Database.InsertAsync(record);
+            KifuList.ItemsSource = await App.Database.GetAllAsync();
+
+            await DisplayAlert("完了", $"{record.DisplayTitle} を保存しました。\n手数: {record.Moves}手", "OK");
+        }
+        catch (Exception ex)
         {
-            Title = defaultTitle,
-            Sente = sente,
-            Gote = gote,
-            Date = DateTime.TryParse(dateStr, out var d) ? d : DateTime.Now,
-            KifuText = text,
-            Moves = model.Moves.Count,
-            Winner = winnerText,
-            Result = kifData.Header.GetValueOrDefault("結末", ""),
-            Tournament = tournament,
-            TimeControl = timeControl
-        };
-
-        await App.Database.InsertAsync(record);
-        KifuList.ItemsSource = await App.Database.GetAllAsync();
-
-        await DisplayAlert("完了", $"{record.DisplayTitle} を保存しました。\n手数: {record.Moves}手", "OK");
+            await DisplayAlert("エラー", $"棋譜の解析に失敗しました:\n{ex.Message}", "OK");
+            System.Console.WriteLine($"Error: {ex}");
+        }
     }
-    catch (Exception ex)
-    {
-        await DisplayAlert("エラー", $"棋譜の解析に失敗しました:\n{ex.Message}", "OK");
-        System.Console.WriteLine($"Error: {ex}");
-    }
-}
 
 private string ExtractName(string fullText)
 {
     var match = Regex.Match(fullText, @"^([^\s]+)");
     return match.Success ? match.Groups[1].Value : fullText;
+}
+
+// 戦法から最初の一つを抽出
+private string ExtractFirstStrategy(string strategies)
+{
+    if (string.IsNullOrWhiteSpace(strategies))
+        return "";
+    
+    // カンマや全角カンマで区切られている場合、最初のものだけ取得
+    var parts = strategies.Split(new[] { ',', '、', '，' }, StringSplitOptions.RemoveEmptyEntries);
+    return parts.Length > 0 ? parts[0].Trim() : strategies.Trim();
 }
 
     private async void OnSelectionChanged(object sender, SelectionChangedEventArgs e)

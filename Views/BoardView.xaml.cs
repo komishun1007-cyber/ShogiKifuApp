@@ -147,49 +147,60 @@ public partial class BoardView : ContentView
         {
             // 現在の手番を判定（1手目=先手=true, 2手目=後手=false）
             bool isSenteMove = (_currentMoveIndex + 1) % 2 == 1;
-            
+
             // 現在の状態を保存（移動前の状態）
             var savedState = new BoardState(_board, _pieceOwner, move, _senteCaptured, _goteCaptured, _lastMovePosition);
             _history.Push(savedState);
 
-            // 移動先の駒を取得（取った駒）
+            // 【重要】移動先の駒を先に保存（取る駒）
             var capturedPiece = _board[move.ToFile, move.ToRank];
             var capturedOwner = _pieceOwner[move.ToFile, move.ToRank];
 
-            // 移動元から駒を取得して移動元をクリア
             string? piece = null;
             bool pieceOwner = isSenteMove;
-            
+
+            // 盤上からの移動の場合
             if (move.FromFile.HasValue && move.FromRank.HasValue)
             {
                 int fromF = move.FromFile.Value;
                 int fromR = move.FromRank.Value;
-                
+
                 if (fromF < 1 || fromF > 9 || fromR < 1 || fromR > 9)
                 {
                     System.Console.WriteLine($"ERROR: 移動元が範囲外 ({fromF},{fromR})");
                     return;
                 }
-                
+
+                // 移動元の駒を取得
                 piece = _board[fromF, fromR];
                 pieceOwner = _pieceOwner[fromF, fromR] ?? isSenteMove;
-                
-                // 移動元をクリア（重要：移動先に配置する前にクリア）
+
+                // 【最重要】移動元をすぐにクリア
                 _board[fromF, fromR] = null;
                 _pieceOwner[fromF, fromR] = null;
             }
             else
             {
-                // 持ち駒から打つ
+                // 持ち駒から打つ場合
                 piece = move.Piece;
                 pieceOwner = isSenteMove;
+
+                // 持ち駒を減らす
+                var captured = isSenteMove ? _senteCaptured : _goteCaptured;
+                if (piece != null && captured.ContainsKey(piece) && captured[piece] > 0)
+                {
+                    captured[piece]--;
+                    if (captured[piece] == 0)
+                        captured.Remove(piece);
+                }
             }
 
-            // 移動先に配置する前に、取った駒を持ち駒に追加
+            // 取った駒を持ち駒に追加
             if (!string.IsNullOrEmpty(capturedPiece) && capturedOwner.HasValue)
             {
                 var basePiece = UnpromotePiece(capturedPiece);
-                
+
+                // 相手の駒を取った場合のみ持ち駒に追加
                 if (capturedOwner.Value != isSenteMove)
                 {
                     if (isSenteMove)
@@ -204,18 +215,6 @@ public partial class BoardView : ContentView
                             _goteCaptured[basePiece] = 0;
                         _goteCaptured[basePiece]++;
                     }
-                }
-            }
-
-            // 持ち駒から打った場合、持ち駒を減らす
-            if (!move.FromFile.HasValue && !move.FromRank.HasValue)
-            {
-                var captured = isSenteMove ? _senteCaptured : _goteCaptured;
-                if (piece != null && captured.ContainsKey(piece) && captured[piece] > 0)
-                {
-                    captured[piece]--;
-                    if (captured[piece] == 0)
-                        captured.Remove(piece);
                 }
             }
 
@@ -235,7 +234,7 @@ public partial class BoardView : ContentView
             // 移動先に配置
             _board[move.ToFile, move.ToRank] = piece;
             _pieceOwner[move.ToFile, move.ToRank] = pieceOwner;
-            
+
             // 最後の手の位置を更新
             _lastMovePosition = (move.ToFile, move.ToRank);
 
@@ -245,8 +244,7 @@ public partial class BoardView : ContentView
         {
             System.Console.WriteLine($"ERROR in ApplyMove: {ex}");
         }
-    }
-
+    }    
     public void UndoMove()
     {
         if (_history.Count == 0) return;

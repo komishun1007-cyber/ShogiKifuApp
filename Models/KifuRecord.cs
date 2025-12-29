@@ -10,6 +10,10 @@ public class KifuRecord
 
     [Indexed]
     public DateTime Date { get; set; } = DateTime.Now;
+    
+    // 追加：戦法
+    public string SenteStrategy { get; set; } = ""; // 先手戦法
+    public string GoteStrategy { get; set; } = ""; // 後手戦法
 
     public string Sente { get; set; } = "";
     public string Gote { get; set; } = "";
@@ -55,7 +59,7 @@ public class KifuRecord
             return string.Join(" - ", parts);
         }
     }
-    
+
     [Ignore]
     public string WinnerSymbol => Winner switch
     {
@@ -63,8 +67,8 @@ public class KifuRecord
         "後手" => "△",
         _ => ""
     };
-    
-    // 一覧表示用の追加情報
+
+// 一覧表示用の追加情報
     [Ignore]
     public string DetailInfo
     {
@@ -77,6 +81,12 @@ public class KifuRecord
             
             if (!string.IsNullOrEmpty(TimeControl))
                 parts.Add($"持ち時間: {TimeControl}");
+            
+            if (!string.IsNullOrEmpty(SenteStrategy))
+                parts.Add($"▲{SenteStrategy}");
+            
+            if (!string.IsNullOrEmpty(GoteStrategy))
+                parts.Add($"△{GoteStrategy}");
             
             return parts.Count > 0 ? string.Join(" / ", parts) : "";
         }
