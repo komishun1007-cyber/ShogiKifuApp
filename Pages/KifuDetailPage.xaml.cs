@@ -23,15 +23,12 @@ public partial class KifuDetailPage : ContentPage
         ParseKifuAndInitBoard();
         ExtractAndDisplayKifuInfo();
 
-        // BoardViewのイベントに接続
         BoardView.MoveIndexChanged += OnMoveIndexChanged;
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-
-        // イベントの切断
         BoardView.MoveIndexChanged -= OnMoveIndexChanged;
     }
 
@@ -55,7 +52,6 @@ public partial class KifuDetailPage : ContentPage
             return;
         }
 
-        // 手筋コメントだけを抽出
         var tesujis = move.Comments
             .Where(c => c.Contains("手筋："))
             .Select(c =>
@@ -83,16 +79,7 @@ public partial class KifuDetailPage : ContentPage
             _kifData = KifuParser.ParseRaw(_record.KifuText ?? "");
             _model = KifuParser.Parse(_record.KifuText ?? "");
 
-            System.Console.WriteLine($"=== 棋譜パース結果 ===");
-            System.Console.WriteLine($"先手: {_model.Sente}");
-            System.Console.WriteLine($"後手: {_model.Gote}");
-            System.Console.WriteLine($"手数: {_model.Moves.Count}");
-
-            if (_model.Moves.Count > 0)
-            {
-                System.Console.WriteLine($"最初の手: {_model.Moves[0].Raw}");
-            }
-            else
+            if (_model.Moves.Count == 0)
             {
                 await DisplayAlert("警告", "棋譜から手が抽出できませんでした", "OK");
             }
@@ -125,6 +112,14 @@ public partial class KifuDetailPage : ContentPage
         // 開始日時
         string startDate = headers.GetValueOrDefault("開始日時", "不明");
         StartDateLabel.Text = startDate;
+        
+        // 棋戦名
+        string tournament = headers.GetValueOrDefault("棋戦", "-");
+        TournamentLabel.Text = tournament;
+        
+        // 持ち時間
+        string timeControl = headers.GetValueOrDefault("持ち時間", "-");
+        TimeControlLabel.Text = timeControl;
 
         // 結果
         string result = headers.GetValueOrDefault("結末", "");
@@ -148,19 +143,6 @@ public partial class KifuDetailPage : ContentPage
         }
 
         ResultLabel.Text = resultText;
-    }
-
-    private async void OnCopyKifuClicked(object? sender, EventArgs e)
-    {
-        try
-        {
-            await Clipboard.SetTextAsync(_record.KifuText ?? "");
-            await DisplayAlert("完了", "棋譜をクリップボードにコピーしました", "OK");
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("エラー", $"コピーに失敗しました:\n{ex.Message}", "OK");
-        }
     }
 
     private async void OnDeleteClicked(object sender, EventArgs e)

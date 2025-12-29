@@ -32,7 +32,7 @@ public partial class BoardView : ContentView
 
     // 色定義
     private readonly Color _normalCellColor = Color.FromArgb("#F5DEB3");
-    private readonly Color _highlightCellColor = Color.FromArgb("#ADD8E6"); // 薄い青色
+    private readonly Color _highlightCellColor = Color.FromArgb("#ADD8E6");
 
     // イベント
     public event EventHandler<int>? MoveIndexChanged;
@@ -46,14 +46,12 @@ public partial class BoardView : ContentView
 
     private void InitializeBoard()
     {
-        // 9x9のグリッド作成
         for (int i = 0; i < 9; i++)
         {
             BoardGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(35) });
             BoardGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(35) });
         }
 
-        // セルの作成（将棋は9×9）
         for (int rank = 1; rank <= 9; rank++)
         {
             for (int file = 1; file <= 9; file++)
@@ -69,7 +67,6 @@ public partial class BoardView : ContentView
                     LineBreakMode = LineBreakMode.NoWrap
                 };
 
-                // グリッドに配置
                 BoardGrid.Add(label, 9 - file, rank - 1);
                 _cells[file, rank] = label;
             }
@@ -86,15 +83,12 @@ public partial class BoardView : ContentView
                 _pieceOwner[f, r] = null;
             }
 
-        // 持ち駒クリア
         _senteCaptured.Clear();
         _goteCaptured.Clear();
-        
-        // ハイライトクリア
         _lastMovePosition = null;
 
         // 標準的な初期配置
-        // 後手（上側）- 所有者をfalseに設定
+        // 後手（上側）
         _board[1, 1] = "香"; _pieceOwner[1, 1] = false;
         _board[9, 1] = "香"; _pieceOwner[9, 1] = false;
         _board[2, 1] = "桂"; _pieceOwner[2, 1] = false;
@@ -112,7 +106,7 @@ public partial class BoardView : ContentView
             _pieceOwner[f, 3] = false;
         }
 
-        // 先手（下側）- 所有者をtrueに設定
+        // 先手（下側）
         for (int f = 1; f <= 9; f++)
         {
             _board[f, 7] = "歩";
@@ -151,48 +145,18 @@ public partial class BoardView : ContentView
     {
         try
         {
-            System.Console.WriteLine($"=== ApplyMove ===");
-            System.Console.WriteLine($"To: {move.ToFile},{move.ToRank}");
-            System.Console.WriteLine($"From: {move.FromFile},{move.FromRank}");
-            System.Console.WriteLine($"Piece: {move.Piece}");
-            
             // 現在の手番を判定（1手目=先手=true, 2手目=後手=false）
             bool isSenteMove = (_currentMoveIndex + 1) % 2 == 1;
             
-            // 現在の状態を保存
+            // 現在の状態を保存（移動前の状態）
             var savedState = new BoardState(_board, _pieceOwner, move, _senteCaptured, _goteCaptured, _lastMovePosition);
             _history.Push(savedState);
 
             // 移動先の駒を取得（取った駒）
             var capturedPiece = _board[move.ToFile, move.ToRank];
             var capturedOwner = _pieceOwner[move.ToFile, move.ToRank];
-            
-            if (!string.IsNullOrEmpty(capturedPiece) && capturedOwner.HasValue)
-            {
-                // 成駒を元に戻す
-                var basePiece = UnpromotePiece(capturedPiece);
-                
-                // 相手の駒を取った場合のみ持ち駒に追加
-                if (capturedOwner.Value != isSenteMove)
-                {
-                    if (isSenteMove)
-                    {
-                        if (!_senteCaptured.ContainsKey(basePiece))
-                            _senteCaptured[basePiece] = 0;
-                        _senteCaptured[basePiece]++;
-                        System.Console.WriteLine($"先手が{basePiece}を取った");
-                    }
-                    else
-                    {
-                        if (!_goteCaptured.ContainsKey(basePiece))
-                            _goteCaptured[basePiece] = 0;
-                        _goteCaptured[basePiece]++;
-                        System.Console.WriteLine($"後手が{basePiece}を取った");
-                    }
-                }
-            }
 
-            // 移動元から駒を取得
+            // 移動元から駒を取得して移動元をクリア
             string? piece = null;
             bool pieceOwner = isSenteMove;
             
@@ -201,7 +165,6 @@ public partial class BoardView : ContentView
                 int fromF = move.FromFile.Value;
                 int fromR = move.FromRank.Value;
                 
-                // 範囲チェック
                 if (fromF < 1 || fromF > 9 || fromR < 1 || fromR > 9)
                 {
                     System.Console.WriteLine($"ERROR: 移動元が範囲外 ({fromF},{fromR})");
@@ -210,8 +173,8 @@ public partial class BoardView : ContentView
                 
                 piece = _board[fromF, fromR];
                 pieceOwner = _pieceOwner[fromF, fromR] ?? isSenteMove;
-                System.Console.WriteLine($"移動元の駒: {piece ?? "なし"} (所有者: {(pieceOwner ? "先手" : "後手")})");
                 
+                // 移動元をクリア（重要：移動先に配置する前にクリア）
                 _board[fromF, fromR] = null;
                 _pieceOwner[fromF, fromR] = null;
             }
@@ -220,11 +183,35 @@ public partial class BoardView : ContentView
                 // 持ち駒から打つ
                 piece = move.Piece;
                 pieceOwner = isSenteMove;
-                System.Console.WriteLine($"持ち駒から打つ: {piece}");
+            }
+
+            // 移動先に配置する前に、取った駒を持ち駒に追加
+            if (!string.IsNullOrEmpty(capturedPiece) && capturedOwner.HasValue)
+            {
+                var basePiece = UnpromotePiece(capturedPiece);
                 
-                // 持ち駒を減らす
+                if (capturedOwner.Value != isSenteMove)
+                {
+                    if (isSenteMove)
+                    {
+                        if (!_senteCaptured.ContainsKey(basePiece))
+                            _senteCaptured[basePiece] = 0;
+                        _senteCaptured[basePiece]++;
+                    }
+                    else
+                    {
+                        if (!_goteCaptured.ContainsKey(basePiece))
+                            _goteCaptured[basePiece] = 0;
+                        _goteCaptured[basePiece]++;
+                    }
+                }
+            }
+
+            // 持ち駒から打った場合、持ち駒を減らす
+            if (!move.FromFile.HasValue && !move.FromRank.HasValue)
+            {
                 var captured = isSenteMove ? _senteCaptured : _goteCaptured;
-                if (captured.ContainsKey(piece) && captured[piece] > 0)
+                if (piece != null && captured.ContainsKey(piece) && captured[piece] > 0)
                 {
                     captured[piece]--;
                     if (captured[piece] == 0)
@@ -242,13 +229,10 @@ public partial class BoardView : ContentView
             // 成る場合
             if (move.IsPromotion && piece != null)
             {
-                var promoted = PromotePiece(piece);
-                System.Console.WriteLine($"成り: {piece} → {promoted}");
-                piece = promoted;
+                piece = PromotePiece(piece);
             }
 
-            // 移動先に配置（所有者情報も保持）
-            System.Console.WriteLine($"移動先に配置: ({move.ToFile},{move.ToRank}) = {piece} (所有者: {(pieceOwner ? "先手" : "後手")})");
+            // 移動先に配置
             _board[move.ToFile, move.ToRank] = piece;
             _pieceOwner[move.ToFile, move.ToRank] = pieceOwner;
             
@@ -256,7 +240,6 @@ public partial class BoardView : ContentView
             _lastMovePosition = (move.ToFile, move.ToRank);
 
             UpdateDisplay();
-            System.Console.WriteLine("=== ApplyMove 完了 ===");
         }
         catch (Exception ex)
         {
@@ -296,7 +279,7 @@ public partial class BoardView : ContentView
                 var owner = _pieceOwner[file, rank];
                 var cell = _cells[file, rank];
                 
-                // 背景色の設定（最後の手をハイライト）
+                // 背景色の設定
                 if (_lastMovePosition.HasValue && 
                     _lastMovePosition.Value.file == file && 
                     _lastMovePosition.Value.rank == rank)
@@ -316,12 +299,8 @@ public partial class BoardView : ContentView
                 }
                 else
                 {
-                    // 全て黒色で統一
                     cell.TextColor = Colors.Black;
                     cell.Text = piece;
-                    
-                    // 所有者に基づいて回転
-                    // true=先手（回転なし）、false=後手（180度回転）
                     cell.Rotation = owner.Value ? 0 : 180;
                 }
             }
@@ -332,7 +311,6 @@ public partial class BoardView : ContentView
 
     private void UpdateCapturedDisplay()
     {
-        // 先手の持ち駒
         if (_senteCaptured.Count == 0)
         {
             SenteCapturedLabel.Text = "なし";
@@ -345,7 +323,6 @@ public partial class BoardView : ContentView
             SenteCapturedLabel.Text = string.Join(" ", pieces);
         }
 
-        // 後手の持ち駒
         if (_goteCaptured.Count == 0)
         {
             GoteCapturedLabel.Text = "なし";
@@ -384,17 +361,14 @@ public partial class BoardView : ContentView
 
     private void UpdateMoveSliderDisplay()
     {
-        // 現在の手の前後2手を表示
         int currentIndex = _currentMoveIndex;
         
-        // 各ラベルをクリア
         Move1Label.Text = "";
         Move2Label.Text = "";
         Move3Label.Text = "";
         Move4Label.Text = "";
         Move5Label.Text = "";
         
-        // 前後2手の範囲を計算
         for (int offset = -2; offset <= 2; offset++)
         {
             int index = currentIndex + offset;
@@ -413,11 +387,11 @@ public partial class BoardView : ContentView
                 if (index >= 0 && index < _allMoves.Count)
                 {
                     var move = _allMoves[index];
-                    label.Text = $"{index + 1}.{FormatMoveText(move)}";
+                    label.Text = FormatMoveText(move);
                 }
                 else if (index == -1)
                 {
-                    label.Text = "0.初期";
+                    label.Text = "初期";
                 }
             }
         }
@@ -456,7 +430,6 @@ public partial class BoardView : ContentView
         };
     }
 
-    // スライダーイベント
     private void OnSliderValueChanged(object? sender, ValueChangedEventArgs e)
     {
         if (_isUpdatingSlider) return;
@@ -465,10 +438,8 @@ public partial class BoardView : ContentView
         
         if (targetIndex == _currentMoveIndex) return;
         
-        // 目標の手まで進めるか戻る
         if (targetIndex > _currentMoveIndex)
         {
-            // 進める
             while (_currentMoveIndex < targetIndex && _currentMoveIndex + 1 < _allMoves.Count)
             {
                 _currentMoveIndex++;
@@ -477,7 +448,6 @@ public partial class BoardView : ContentView
         }
         else
         {
-            // 戻る
             while (_currentMoveIndex > targetIndex && _currentMoveIndex >= 0)
             {
                 UndoMove();
@@ -490,7 +460,6 @@ public partial class BoardView : ContentView
         MoveIndexChanged?.Invoke(this, _currentMoveIndex);
     }
 
-    // ボタンイベント
     private void OnResetClicked(object? sender, EventArgs e)
     {
         ResetHistory();
@@ -562,7 +531,6 @@ public partial class BoardView : ContentView
             Move = move;
             _lastMovePositionCopy = lastMovePosition;
             
-            // 配列を手動でコピー
             for (int f = 0; f < 10; f++)
                 for (int r = 0; r < 10; r++)
                 {
@@ -570,7 +538,6 @@ public partial class BoardView : ContentView
                     _ownerCopy[f, r] = owner[f, r];
                 }
             
-            // 持ち駒をコピー
             foreach (var kvp in senteCaptured)
                 _senteCapturedCopy[kvp.Key] = kvp.Value;
             foreach (var kvp in goteCaptured)
