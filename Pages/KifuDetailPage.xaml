@@ -11,7 +11,7 @@
 
             <!-- 対局情報 -->
             <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="12">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="12">
                     
                     <!-- 先手情報 -->
                     <Label Grid.Row="0" Grid.Column="0" Text="先手：" FontAttributes="Bold" VerticalOptions="Center"/>
@@ -25,14 +25,22 @@
                     <Label Grid.Row="2" Grid.Column="0" Text="対局日時：" FontAttributes="Bold" VerticalOptions="Center"/>
                     <Label Grid.Row="2" Grid.Column="1" x:Name="StartDateLabel" Text="読込中..." VerticalOptions="Center"/>
                     
+                    <!-- 棋戦名 -->
+                    <Label Grid.Row="3" Grid.Column="0" Text="棋戦：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="3" Grid.Column="1" x:Name="TournamentLabel" Text="-" VerticalOptions="Center"/>
+                    
+                    <!-- 持ち時間 -->
+                    <Label Grid.Row="4" Grid.Column="0" Text="持ち時間：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="4" Grid.Column="1" x:Name="TimeControlLabel" Text="-" VerticalOptions="Center"/>
+                    
                     <!-- 結果 -->
-                    <Label Grid.Row="3" Grid.Column="0" Text="結果：" FontAttributes="Bold" VerticalOptions="Center"/>
-                    <Label Grid.Row="3" Grid.Column="1" x:Name="ResultLabel" Text="読込中..." VerticalOptions="Center"/>
+                    <Label Grid.Row="5" Grid.Column="0" Text="結果：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="5" Grid.Column="1" x:Name="ResultLabel" Text="読込中..." VerticalOptions="Center"/>
                     
                 </Grid>
             </Frame>
 
-            <!-- 将棋盤と再生ボタンが統合されました -->
+            <!-- 将棋盤と再生ボタン -->
             <views:BoardView x:Name="BoardView"/>
 
             <!-- 現在の手の手筋表示 -->
@@ -40,27 +48,6 @@
                 <VerticalStackLayout Spacing="4">
                     <Label Text="📌 この手の手筋" FontSize="12" FontAttributes="Bold" TextColor="DarkOrange"/>
                     <Label x:Name="CurrentTesujisLabel" Text="" FontSize="14" LineBreakMode="WordWrap"/>
-                </VerticalStackLayout>
-            </Frame>
-
-            <!-- 棋譜本文表示エリア -->
-            <Frame Padding="8" BorderColor="Gray" CornerRadius="8">
-                <VerticalStackLayout Spacing="4">
-                    <HorizontalStackLayout Spacing="8" HorizontalOptions="Start">
-                        <Label Text="棋譜本文" FontAttributes="Bold" VerticalOptions="Center"/>
-                        <Button Text="📋 コピー" 
-                                Clicked="OnCopyKifuClicked" 
-                                Padding="8,4" 
-                                FontSize="12"
-                                CornerRadius="4"/>
-                    </HorizontalStackLayout>
-                    <Editor x:Name="KifuEditor"
-                            Text="{Binding KifuText}"
-                            IsReadOnly="True"
-                            AutoSize="TextChanges"
-                            HeightRequest="200"
-                            FontSize="11"
-                            FontFamily="Courier New"/>
                 </VerticalStackLayout>
             </Frame>
 

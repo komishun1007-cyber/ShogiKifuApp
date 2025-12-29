@@ -16,10 +16,14 @@ public class KifuRecord
     
     public int Moves { get; set; }
     public string Result { get; set; } = "";
-    public string Winner { get; set; } = ""; // "先手", "後手", ""
+    public string Winner { get; set; } = "";
     public string KifuText { get; set; } = "";
     public string Notes { get; set; } = "";
     public string Title { get; set; } = "";
+    
+    // 追加フィールド
+    public string Tournament { get; set; } = ""; // 棋戦名
+    public string TimeControl { get; set; } = ""; // 持ち時間
 
     [Ignore]
     public string DisplayTitle => string.IsNullOrEmpty(Title)
@@ -59,4 +63,22 @@ public class KifuRecord
         "後手" => "△",
         _ => ""
     };
+    
+    // 一覧表示用の追加情報
+    [Ignore]
+    public string DetailInfo
+    {
+        get
+        {
+            var parts = new List<string>();
+            
+            if (!string.IsNullOrEmpty(Tournament))
+                parts.Add(Tournament);
+            
+            if (!string.IsNullOrEmpty(TimeControl))
+                parts.Add($"持ち時間: {TimeControl}");
+            
+            return parts.Count > 0 ? string.Join(" / ", parts) : "";
+        }
+    }
 }
