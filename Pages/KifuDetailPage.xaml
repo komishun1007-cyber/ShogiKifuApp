@@ -11,7 +11,7 @@
 
             <!-- 対局情報 -->
             <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="12">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="12">
                     
                     <!-- 先手情報 -->
                     <Label Grid.Row="0" Grid.Column="0" Text="先手：" FontAttributes="Bold" VerticalOptions="Center"/>
@@ -33,9 +33,17 @@
                     <Label Grid.Row="4" Grid.Column="0" Text="持ち時間：" FontAttributes="Bold" VerticalOptions="Center"/>
                     <Label Grid.Row="4" Grid.Column="1" x:Name="TimeControlLabel" Text="-" VerticalOptions="Center"/>
                     
+                    <!-- 先手戦法 -->
+                    <Label Grid.Row="5" Grid.Column="0" Text="▲戦法：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="5" Grid.Column="1" x:Name="SenteStrategyLabel" Text="-" VerticalOptions="Center"/>
+                    
+                    <!-- 後手戦法 -->
+                    <Label Grid.Row="6" Grid.Column="0" Text="△戦法：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="6" Grid.Column="1" x:Name="GoteStrategyLabel" Text="-" VerticalOptions="Center"/>
+                    
                     <!-- 結果 -->
-                    <Label Grid.Row="5" Grid.Column="0" Text="結果：" FontAttributes="Bold" VerticalOptions="Center"/>
-                    <Label Grid.Row="5" Grid.Column="1" x:Name="ResultLabel" Text="読込中..." VerticalOptions="Center"/>
+                    <Label Grid.Row="7" Grid.Column="0" Text="結果：" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Grid.Row="7" Grid.Column="1" x:Name="ResultLabel" Text="読込中..." VerticalOptions="Center"/>
                     
                 </Grid>
             </Frame>

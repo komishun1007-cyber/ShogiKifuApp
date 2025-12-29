@@ -95,6 +95,7 @@ public partial class KifuDetailPage : ContentPage
         }
     }
 
+
     private void ExtractAndDisplayKifuInfo()
     {
         if (_kifData == null) return;
@@ -112,14 +113,23 @@ public partial class KifuDetailPage : ContentPage
         // 開始日時
         string startDate = headers.GetValueOrDefault("開始日時", "不明");
         StartDateLabel.Text = startDate;
-        
+
         // 棋戦名
         string tournament = headers.GetValueOrDefault("棋戦", "-");
         TournamentLabel.Text = tournament;
-        
+
         // 持ち時間
         string timeControl = headers.GetValueOrDefault("持ち時間", "-");
         TimeControlLabel.Text = timeControl;
+
+        // 戦法
+        string senteStrategy = ExtractFirstStrategy(headers.GetValueOrDefault("先手戦型",
+                                                    headers.GetValueOrDefault("▲戦型", "-")));
+        SenteStrategyLabel.Text = senteStrategy;
+
+        string goteStrategy = ExtractFirstStrategy(headers.GetValueOrDefault("後手戦型",
+                                                   headers.GetValueOrDefault("△戦型", "-")));
+        GoteStrategyLabel.Text = goteStrategy;
 
         // 結果
         string result = headers.GetValueOrDefault("結末", "");
@@ -145,6 +155,15 @@ public partial class KifuDetailPage : ContentPage
         ResultLabel.Text = resultText;
     }
 
+    // 戦法から最初の一つを抽出
+    private string ExtractFirstStrategy(string strategies)
+    {
+        if (string.IsNullOrWhiteSpace(strategies))
+            return "-";
+
+        var parts = strategies.Split(new[] { ',', '、', '，' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0].Trim() : strategies.Trim();
+    }
     private async void OnDeleteClicked(object sender, EventArgs e)
     {
         var yes = await DisplayAlert("確認", "この棋譜を削除しますか？", "削除", "キャンセル");
