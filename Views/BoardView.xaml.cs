@@ -145,29 +145,45 @@ public partial class BoardView : ContentView
     {
         try
         {
-            // 現在の手番を判定（1手目=先手=true, 2手目=後手=false）
             bool isSenteMove = (_currentMoveIndex + 1) % 2 == 1;
 
-            // 現在の状態を保存（移動前の状態）
+            System.Console.WriteLine($"=== ApplyMove開始 ===");
+            System.Console.WriteLine($"現在の手数: {_currentMoveIndex + 1}");
+            System.Console.WriteLine($"手番: {(isSenteMove ? "先手" : "後手")}");
+            System.Console.WriteLine($"指し手: {move.ShortDisplay} (Raw: {move.Raw})");
+            System.Console.WriteLine($"From: ({move.FromFile},{move.FromRank}) To: ({move.ToFile},{move.ToRank})");
+
+            // 【1】現在の状態を保存
             var savedState = new BoardState(_board, _pieceOwner, move, _senteCaptured, _goteCaptured, _lastMovePosition);
             _history.Push(savedState);
 
-            // 【重要】移動先の駒を先に保存（取る駒）
+            // 【2】移動先座標の検証
+            if (move.ToFile < 1 || move.ToFile > 9 || move.ToRank < 1 || move.ToRank > 9)
+            {
+                System.Console.WriteLine($"ERROR: 移動先が範囲外 ({move.ToFile},{move.ToRank})");
+                return;
+            }
+
+            // 【3】移動先の駒を保存（取る駒）
             var capturedPiece = _board[move.ToFile, move.ToRank];
             var capturedOwner = _pieceOwner[move.ToFile, move.ToRank];
+
+            System.Console.WriteLine($"移動先({move.ToFile},{move.ToRank})の既存駒: {capturedPiece ?? "なし"}");
 
             string? piece = null;
             bool pieceOwner = isSenteMove;
 
-            // 盤上からの移動の場合
+            // 【4】移動元がある場合（盤上移動）
             if (move.FromFile.HasValue && move.FromRank.HasValue)
             {
                 int fromF = move.FromFile.Value;
                 int fromR = move.FromRank.Value;
 
+                System.Console.WriteLine($"★盤上移動: ({fromF},{fromR}) → ({move.ToFile},{move.ToRank})");
+
                 if (fromF < 1 || fromF > 9 || fromR < 1 || fromR > 9)
                 {
-                    System.Console.WriteLine($"ERROR: 移動元が範囲外 ({fromF},{fromR})");
+                    System.Console.WriteLine($"ERROR: 移動元が範囲外");
                     return;
                 }
 
@@ -175,13 +191,24 @@ public partial class BoardView : ContentView
                 piece = _board[fromF, fromR];
                 pieceOwner = _pieceOwner[fromF, fromR] ?? isSenteMove;
 
-                // 【最重要】移動元をすぐにクリア
+                System.Console.WriteLine($"移動元の駒: {piece ?? "なし"}");
+
+                if (string.IsNullOrEmpty(piece))
+                {
+                    System.Console.WriteLine($"WARNING: 移動元に駒がありません");
+                }
+
+                // 【重要】移動元を即座にクリア
                 _board[fromF, fromR] = null;
                 _pieceOwner[fromF, fromR] = null;
+
+                System.Console.WriteLine($"✓ 移動元({fromF},{fromR})をクリアしました");
             }
+            // 【5】移動元がない場合（駒打ち）
             else
             {
-                // 持ち駒から打つ場合
+                System.Console.WriteLine($"★駒打ち: {move.Piece} を ({move.ToFile},{move.ToRank}) に打つ");
+
                 piece = move.Piece;
                 pieceOwner = isSenteMove;
 
@@ -195,56 +222,53 @@ public partial class BoardView : ContentView
                 }
             }
 
-            // 取った駒を持ち駒に追加
-            if (!string.IsNullOrEmpty(capturedPiece) && capturedOwner.HasValue)
+            // 【6】取った駒を持ち駒に追加
+            if (!string.IsNullOrEmpty(capturedPiece) && capturedOwner.HasValue && capturedOwner.Value != isSenteMove)
             {
                 var basePiece = UnpromotePiece(capturedPiece);
+                System.Console.WriteLine($"駒を取得: {capturedPiece} → {basePiece}");
 
-                // 相手の駒を取った場合のみ持ち駒に追加
-                if (capturedOwner.Value != isSenteMove)
+                if (isSenteMove)
                 {
-                    if (isSenteMove)
-                    {
-                        if (!_senteCaptured.ContainsKey(basePiece))
-                            _senteCaptured[basePiece] = 0;
-                        _senteCaptured[basePiece]++;
-                    }
-                    else
-                    {
-                        if (!_goteCaptured.ContainsKey(basePiece))
-                            _goteCaptured[basePiece] = 0;
-                        _goteCaptured[basePiece]++;
-                    }
+                    if (!_senteCaptured.ContainsKey(basePiece))
+                        _senteCaptured[basePiece] = 0;
+                    _senteCaptured[basePiece]++;
+                }
+                else
+                {
+                    if (!_goteCaptured.ContainsKey(basePiece))
+                        _goteCaptured[basePiece] = 0;
+                    _goteCaptured[basePiece]++;
                 }
             }
 
-            // 範囲チェック
-            if (move.ToFile < 1 || move.ToFile > 9 || move.ToRank < 1 || move.ToRank > 9)
-            {
-                System.Console.WriteLine($"ERROR: 移動先が範囲外 ({move.ToFile},{move.ToRank})");
-                return;
-            }
-
-            // 成る場合
+            // 【7】成る場合
             if (move.IsPromotion && piece != null)
             {
-                piece = PromotePiece(piece);
+                var promotedPiece = PromotePiece(piece);
+                System.Console.WriteLine($"成り: {piece} → {promotedPiece}");
+                piece = promotedPiece;
             }
 
-            // 移動先に配置
+            // 【8】移動先に配置
             _board[move.ToFile, move.ToRank] = piece;
             _pieceOwner[move.ToFile, move.ToRank] = pieceOwner;
+            System.Console.WriteLine($"✓ 移動先({move.ToFile},{move.ToRank})に {piece} を配置");
 
-            // 最後の手の位置を更新
+            // 【9】最後の手の位置を更新
             _lastMovePosition = (move.ToFile, move.ToRank);
 
+            // 【10】画面更新
             UpdateDisplay();
+
+            System.Console.WriteLine($"=== ApplyMove終了 ===\n");
         }
         catch (Exception ex)
         {
             System.Console.WriteLine($"ERROR in ApplyMove: {ex}");
         }
-    }    
+    }
+
     public void UndoMove()
     {
         if (_history.Count == 0) return;
