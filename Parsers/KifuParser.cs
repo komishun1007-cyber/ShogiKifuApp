@@ -183,8 +183,8 @@ public static class KifuParser
     {
         try
         {
-            // 括弧内の情報を除去
-            text = Regex.Replace(text, @"\([^)]+\)", "").Trim();
+            // 括弧内の情報を除去（後で座標抽出するので、ここでは除去しない）
+            var textForParsing = text;
 
             var move = new Move { Raw = text };
 
@@ -192,19 +192,19 @@ public static class KifuParser
             if (text.StartsWith("同"))
             {
                 move.IsSame = true;
-                
+
                 // 駒の種類を抽出
                 var samePieceMatch = Regex.Match(text, @"同\s*([歩香桂銀金角飛王玉と杏圭全馬龍])");
                 if (samePieceMatch.Success)
-                    move.Piece = samePieceMatch.Value;
-                
+                    move.Piece = samePieceMatch.Groups[1].Value;
+
                 move.IsPromotion = text.Contains("成");
                 return move;
             }
 
             // 移動先の座標を抽出
             var destPattern = @"^([１-９])([一二三四五六七八九])";
-            var destMatch = Regex.Match(text, destPattern);
+            var destMatch = Regex.Match(textForParsing, destPattern);
 
             if (!destMatch.Success)
                 return null;
@@ -220,25 +220,36 @@ public static class KifuParser
             move.ToRank = toRank;
 
             // 駒の種類を抽出
-            var pieceMatch = Regex.Match(text, @"[歩香桂銀金角飛王玉と杏圭全馬龍]");
+            var pieceMatch = Regex.Match(textForParsing, @"[歩香桂銀金角飛王玉と杏圭全馬龍]");
             if (pieceMatch.Success)
                 move.Piece = pieceMatch.Value;
 
             // 成りの判定
             move.IsPromotion = text.Contains("成");
 
-            // 移動元の座標を抽出
-            var fromPattern = @"\((\d)(\d)\)";
+            // 移動元の座標を抽出 (例: (33) → 3筋3段目)
+            var fromPattern = @"\((\d{2})\)";
             var fromMatch = Regex.Match(text, fromPattern);
 
             if (fromMatch.Success)
             {
-                if (int.TryParse(fromMatch.Groups[1].Value, out var fromFile) &&
-                    int.TryParse(fromMatch.Groups[2].Value, out var fromRank))
+                var fromStr = fromMatch.Groups[1].Value; // "33"
+                if (fromStr.Length == 2)
                 {
-                    move.FromFile = fromFile;
-                    move.FromRank = fromRank;
+                    if (int.TryParse(fromStr[0].ToString(), out var fromFile) &&
+                        int.TryParse(fromStr[1].ToString(), out var fromRank))
+                    {
+                        move.FromFile = fromFile;
+                        move.FromRank = fromRank;
+
+                        System.Console.WriteLine($"ParseSingleMove: '{text}' → From({fromFile},{fromRank}) To({toFile},{toRank}) Piece={move.Piece}");
+                    }
                 }
+            }
+            else
+            {
+                // 移動元座標がない場合は駒打ち
+                System.Console.WriteLine($"ParseSingleMove: '{text}' → 駒打ち To({toFile},{toRank}) Piece={move.Piece}");
             }
 
             return move;

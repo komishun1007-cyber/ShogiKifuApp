@@ -146,22 +146,22 @@ private async void OnPasteClicked(object sender, EventArgs e)
         }
     }
 
-private string ExtractName(string fullText)
-{
-    var match = Regex.Match(fullText, @"^([^\s]+)");
-    return match.Success ? match.Groups[1].Value : fullText;
-}
+    private string ExtractName(string fullText)
+    {
+        var match = Regex.Match(fullText, @"^([^\s]+)");
+        return match.Success ? match.Groups[1].Value : fullText;
+    }
 
-// 戦法から最初の一つを抽出
-private string ExtractFirstStrategy(string strategies)
-{
-    if (string.IsNullOrWhiteSpace(strategies))
-        return "";
-    
-    // カンマや全角カンマで区切られている場合、最初のものだけ取得
-    var parts = strategies.Split(new[] { ',', '、', '，' }, StringSplitOptions.RemoveEmptyEntries);
-    return parts.Length > 0 ? parts[0].Trim() : strategies.Trim();
-}
+    // 戦法から最初の一つを抽出
+    private string ExtractFirstStrategy(string strategies)
+    {
+        if (string.IsNullOrWhiteSpace(strategies))
+            return "";
+        
+        // カンマや全角カンマで区切られている場合、最初のものだけ取得
+        var parts = strategies.Split(new[] { ',', '、', '，' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0].Trim() : strategies.Trim();
+    }
 
     private async void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
