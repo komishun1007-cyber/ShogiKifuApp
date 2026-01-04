@@ -5,10 +5,55 @@
     x:Class="ShogiKifuApp.MainPage"
     Title="棋譜一覧">
 
-    <Grid Padding="12" RowDefinitions="*,Auto">
+    <Grid Padding="12" RowDefinitions="Auto,*,Auto">
         
+        <!-- フィルター/ソートUI -->
+        <Frame Grid.Row="0" Padding="12" Margin="0,0,0,8" BorderColor="LightGray" CornerRadius="8">
+            <VerticalStackLayout Spacing="8">
+                <!-- ユーザー名検索 -->
+                <Entry x:Name="UserNameFilterEntry"
+                       Placeholder="ユーザー名で絞り込み (完全一致)"
+                       TextChanged="OnFilterChanged"
+                       ClearButtonVisibility="WhileEditing"/>
+                
+                <!-- 日付範囲 -->
+                <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+                    <DatePicker Grid.Column="0" 
+                                x:Name="StartDatePicker"
+                                Format="yyyy/MM/dd"
+                                DateSelected="OnFilterChanged"/>
+                    <Label Grid.Column="1" 
+                           Text="〜" 
+                           VerticalOptions="Center"
+                           FontSize="16"/>
+                    <DatePicker Grid.Column="2" 
+                                x:Name="EndDatePicker"
+                                Format="yyyy/MM/dd"
+                                DateSelected="OnFilterChanged"/>
+                </Grid>
+                
+                <!-- 並び替え -->
+                <Picker x:Name="SortPicker"
+                        Title="並び替え"
+                        SelectedIndex="0"
+                        SelectedIndexChanged="OnFilterChanged">
+                    <Picker.Items>
+                        <x:String>日付(新しい順)</x:String>
+                        <x:String>日付(古い順)</x:String>
+                        <x:String>ユーザー名(昇順)</x:String>
+                    </Picker.Items>
+                </Picker>
+                
+                <Button Text="フィルターをクリア" 
+                        Clicked="OnClearFilterClicked"
+                        BackgroundColor="LightGray"
+                        TextColor="Black"/>
+            </VerticalStackLayout>
+        </Frame>
+        
+        <!-- 棋譜リスト -->
         <CollectionView x:Name="KifuList"
-                        Grid.Row="0"
+                        Grid.Row="1"
                         SelectionMode="Single"
                         SelectionChanged="OnSelectionChanged">
             <CollectionView.ItemTemplate>
@@ -72,20 +117,32 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <HorizontalStackLayout Grid.Row="1" 
-                               Spacing="8" 
-                               Padding="0,12,0,0"
-                               HorizontalOptions="Center">
-            <Button Text="＋ 新規作成"
-                    Clicked="OnAddClicked"
-                    WidthRequest="120"/>
-            <Button Text="📁 インポート"
-                    Clicked="OnImportClicked"
-                    WidthRequest="120"/>
-            <Button Text="📋 貼り付け"
-                    Clicked="OnPasteClicked"
-                    WidthRequest="120"/>
-        </HorizontalStackLayout>
+        <!-- ボタン群 -->
+        <VerticalStackLayout Grid.Row="2" Spacing="8" Padding="0,12,0,0">
+            <!-- ユーザー管理・統計ボタン -->
+            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                <Button Text="👤 ユーザー管理"
+                        Clicked="OnUserManagementClicked"
+                        WidthRequest="140"/>
+                <Button Text="📊 統計・分析"
+                        Clicked="OnStatisticsClicked"
+                        WidthRequest="140"
+                        BackgroundColor="Green"/>
+            </HorizontalStackLayout>
+            
+            <!-- 既存ボタン -->
+            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                <Button Text="＋ 新規作成"
+                        Clicked="OnAddClicked"
+                        WidthRequest="120"/>
+                <Button Text="📁 インポート"
+                        Clicked="OnImportClicked"
+                        WidthRequest="120"/>
+                <Button Text="📋 貼り付け"
+                        Clicked="OnPasteClicked"
+                        WidthRequest="120"/>
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
 
     </Grid>
 </ContentPage>

@@ -131,7 +131,15 @@ public static class KifuParser
             var value = line.Substring(separatorIndex + 1).Trim();
 
             if (!string.IsNullOrWhiteSpace(key))
+            {
                 header[key] = value;
+
+                // 戦法の別名も登録(将棋ウォーズ等で使われる表記)
+                if (key == "先手の戦型" || key == "先手戦法")
+                    header["先手戦型"] = value;
+                if (key == "後手の戦型" || key == "後手戦法")
+                    header["後手戦型"] = value;
+            }
         }
     }
 
