@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+    x:Class="ShogiKifuApp.Pages.StatisticsPage"
+    Title="統計・分析">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="12" Spacing="16">
+            
+            <!-- ユーザー情報 -->
+            <Frame Padding="12" BackgroundColor="LightBlue" CornerRadius="8">
+                <VerticalStackLayout Spacing="4">
+                    <Label x:Name="UserNameLabel" 
+                           Text="ユーザー: 読込中..." 
+                           FontSize="18"
+                           FontAttributes="Bold"/>
+                    <Label Text="※ ユーザー管理画面で切り替え可能"
+                           FontSize="11"
+                           TextColor="Gray"/>
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- 基本統計 -->
+            <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="8">
+                    <Label Grid.Row="0" Grid.ColumnSpan="2"
+                           Text="📊 基本統計"
+                           FontSize="16"
+                           FontAttributes="Bold"/>
+                    
+                    <Label Grid.Row="1" Grid.Column="0"
+                           Text="総対局数"
+                           FontSize="14"/>
+                    <Label Grid.Row="1" Grid.Column="1"
+                           x:Name="TotalGamesLabel"
+                           Text="0局"
+                           FontSize="14"
+                           HorizontalTextAlignment="End"
+                           FontAttributes="Bold"/>
+                    
+                    <Label Grid.Row="2" Grid.Column="0"
+                           Text="勝利数"
+                           FontSize="14"/>
+                    <Label Grid.Row="2" Grid.Column="1"
+                           x:Name="WinsLabel"
+                           Text="0勝"
+                           FontSize="14"
+                           HorizontalTextAlignment="End"
+                           TextColor="Green"
+                           FontAttributes="Bold"/>
+                    
+                    <Label Grid.Row="3" Grid.Column="0"
+                           Text="敗北数"
+                           FontSize="14"/>
+                    <Label Grid.Row="3" Grid.Column="1"
+                           x:Name="LossesLabel"
+                           Text="0敗"
+                           FontSize="14"
+                           HorizontalTextAlignment="End"
+                           TextColor="Red"
+                           FontAttributes="Bold"/>
+                    
+                    <Label Grid.Row="4" Grid.Column="0"
+                           Text="勝率"
+                           FontSize="14"/>
+                    <Label Grid.Row="4" Grid.Column="1"
+                           x:Name="WinRateLabel"
+                           Text="0.0%"
+                           FontSize="14"
+                           HorizontalTextAlignment="End"
+                           TextColor="Blue"
+                           FontAttributes="Bold"/>
+                </Grid>
+            </Frame>
+            
+            <!-- 月別推移グラフ -->
+            <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="📈 月別勝率推移"
+                           FontSize="16"
+                           FontAttributes="Bold"/>
+                    <lvc:CartesianChart x:Name="MonthlyChart"
+                                        HeightRequest="250"/>
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- 棋戦別統計 -->
+            <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="🏆 棋戦別勝率"
+                           FontSize="16"
+                           FontAttributes="Bold"/>
+                    <CollectionView x:Name="TournamentStatsList"
+                                    HeightRequest="200">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="8,4" ColumnSpacing="12">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding TournamentName}"
+                                           FontSize="14"
+                                           VerticalOptions="Center"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Games, StringFormat='{0}局'}"
+                                           FontSize="13"
+                                           TextColor="Gray"
+                                           VerticalOptions="Center"/>
+                                    <Label Grid.Column="2"
+                                           Text="{Binding WinRate, StringFormat='{0:F1}%'}"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="Blue"
+                                           VerticalOptions="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- 戦法別統計 -->
+            <Frame Padding="12" BorderColor="Gray" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="⚔️ 戦法別勝率"
+                           FontSize="16"
+                           FontAttributes="Bold"/>
+                    <CollectionView x:Name="StrategyStatsList"
+                                    HeightRequest="200">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="8,4" ColumnSpacing="12">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding StrategyName}"
+                                           FontSize="14"
+                                           VerticalOptions="Center"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Games, StringFormat='{0}局'}"
+                                           FontSize="13"
+                                           TextColor="Gray"
+                                           VerticalOptions="Center"/>
+                                    <Label Grid.Column="2"
+                                           Text="{Binding WinRate, StringFormat='{0:F1}%'}"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="Green"
+                                           VerticalOptions="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+            
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

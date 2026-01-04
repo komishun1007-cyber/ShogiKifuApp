@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="ShogiKifuApp.Pages.UserManagementPage"
+    Title="ユーザー管理">
+
+    <Grid Padding="12" RowDefinitions="Auto,*,Auto">
+        
+        <!-- 説明 -->
+        <Frame Grid.Row="0" Padding="12" Margin="0,0,0,12" BackgroundColor="LightYellow">
+            <Label Text="複数のユーザー名を登録できます。統計・分析画面では選択中(✓)のユーザーが使用されます。"
+                   FontSize="13"
+                   LineBreakMode="WordWrap"/>
+        </Frame>
+        
+        <!-- ユーザーリスト -->
+        <CollectionView x:Name="UserList"
+                        Grid.Row="1"
+                        SelectionMode="Single"
+                        SelectionChanged="OnUserSelected">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="12" Margin="0,4" HasShadow="True" CornerRadius="8">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <!-- 選択マーク -->
+                            <Label Grid.Column="0"
+                                   Text="{Binding IsActive, Converter={StaticResource ActiveMarkConverter}}"
+                                   FontSize="20"
+                                   VerticalOptions="Center"
+                                   TextColor="Green"/>
+                            
+                            <!-- ユーザー情報 -->
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="{Binding UserName}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"/>
+                                <Label Text="{Binding Notes}"
+                                       FontSize="12"
+                                       TextColor="Gray"
+                                       IsVisible="{Binding Notes, Converter={StaticResource StringNotEmptyConverter}}"/>
+                                <Label Text="{Binding CreatedAt, StringFormat='登録: {0:yyyy/MM/dd}'}"
+                                       FontSize="11"
+                                       TextColor="DarkGray"/>
+                            </VerticalStackLayout>
+                            
+                            <!-- 編集ボタン -->
+                            <Button Grid.Column="2"
+                                    Text="編集"
+                                    Clicked="OnEditClicked"
+                                    CommandParameter="{Binding .}"
+                                    WidthRequest="60"
+                                    HeightRequest="40"
+                                    FontSize="12"/>
+                            
+                            <!-- 削除ボタン -->
+                            <Button Grid.Column="3"
+                                    Text="削除"
+                                    Clicked="OnDeleteClicked"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="Tomato"
+                                    TextColor="White"
+                                    WidthRequest="60"
+                                    HeightRequest="40"
+                                    FontSize="12"/>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        
+        <!-- 追加ボタン -->
+        <Button Grid.Row="2"
+                Text="＋ 新しいユーザーを追加"
+                Clicked="OnAddUserClicked"
+                Margin="0,12,0,0"
+                BackgroundColor="Green"/>
+        
+    </Grid>
+</ContentPage>

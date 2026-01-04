@@ -6,18 +6,100 @@ namespace ShogiKifuApp;
 
 public partial class MainPage : ContentPage
 {
+    private List<KifuRecord> _allRecords = new List<KifuRecord>();
+    
     public MainPage()
     {
         InitializeComponent();
         
         // Converterを追加
         Resources.Add("StringNotEmptyConverter", new StringNotEmptyConverter());
+        
+        // 日付ピッカーの初期値設定
+        StartDatePicker.Date = DateTime.Now.AddYears(-1);
+        EndDatePicker.Date = DateTime.Now;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        KifuList.ItemsSource = await App.Database.GetAllAsync();
+        await LoadAndFilterData();
+    }
+
+    private async Task LoadAndFilterData()
+    {
+        _allRecords = await App.Database.GetAllAsync();
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = _allRecords.AsEnumerable();
+        
+        // ユーザー名フィルター (完全一致)
+        if (!string.IsNullOrWhiteSpace(UserNameFilterEntry.Text))
+        {
+            var userName = UserNameFilterEntry.Text.Trim();
+            filtered = filtered.Where(r => 
+                r.Sente == userName || r.Gote == userName
+            );
+        }
+        
+        // 日付範囲フィルター
+        filtered = filtered.Where(r => 
+            r.Date.Date >= StartDatePicker.Date.Date && 
+            r.Date.Date <= EndDatePicker.Date.Date
+        );
+        
+        // 並び替え
+        var sorted = SortPicker.SelectedIndex switch
+        {
+            0 => filtered.OrderByDescending(r => r.Date), // 日付(新しい順)
+            1 => filtered.OrderBy(r => r.Date),           // 日付(古い順)
+            2 => filtered.OrderBy(r => r.Sente)           // ユーザー名(昇順)
+                         .ThenBy(r => r.Gote),
+            _ => filtered.OrderByDescending(r => r.Date)
+        };
+        
+        KifuList.ItemsSource = sorted.ToList();
+    }
+
+    private void OnFilterChanged(object? sender, EventArgs e)
+    {
+        ApplyFilters();
+    }
+
+    private void OnClearFilterClicked(object? sender, EventArgs e)
+    {
+        UserNameFilterEntry.Text = "";
+        StartDatePicker.Date = DateTime.Now.AddYears(-1);
+        EndDatePicker.Date = DateTime.Now;
+        SortPicker.SelectedIndex = 0;
+        ApplyFilters();
+    }
+
+    private async void OnUserManagementClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new Pages.UserManagementPage());
+    }
+
+    private async void OnStatisticsClicked(object? sender, EventArgs e)
+    {
+        var activeUser = await App.UserProfileDatabase.GetActiveUserAsync();
+        
+        if (activeUser == null)
+        {
+            var result = await DisplayAlert("確認", 
+                "ユーザーが登録されていません。\nユーザー管理画面を開きますか?", 
+                "はい", "キャンセル");
+            
+            if (result)
+                await Navigation.PushAsync(new Pages.UserManagementPage());
+            
+            return;
+        }
+        
+        await Navigation.PushAsync(new Pages.StatisticsPage(activeUser));
     }
 
     private async void OnAddClicked(object sender, EventArgs e)
@@ -30,7 +112,7 @@ public partial class MainPage : ContentPage
         };
 
         await App.Database.InsertAsync(newRecord);
-        KifuList.ItemsSource = await App.Database.GetAllAsync();
+        await LoadAndFilterData();
     }
 
     private async void OnImportClicked(object sender, EventArgs e)
@@ -49,43 +131,44 @@ public partial class MainPage : ContentPage
                 PickerTitle = "棋譜ファイルを選択してください",
                 FileTypes = customFileType
             });
-if (result == null) return;
 
-        var text = await File.ReadAllTextAsync(result.FullPath);
-        await SaveKifuFromText(text, Path.GetFileNameWithoutExtension(result.FileName));
-    }
-    catch (Exception ex)
-    {
-        await DisplayAlert("エラー", $"インポートに失敗しました:\n{ex.Message}", "OK");
-    }
-}
+            if (result == null) return;
 
-private async void OnPasteClicked(object sender, EventArgs e)
-{
-    try
-    {
-        var hasText = await Clipboard.Default.GetTextAsync();
-        if (string.IsNullOrWhiteSpace(hasText))
-        {
-            await DisplayAlert("エラー", "クリップボードにテキストがありません", "OK");
-            return;
+            var text = await File.ReadAllTextAsync(result.FullPath);
+            await SaveKifuFromText(text, Path.GetFileNameWithoutExtension(result.FileName));
         }
-
-        var pasted = await Clipboard.Default.GetTextAsync();
-        
-        if (string.IsNullOrWhiteSpace(pasted))
+        catch (Exception ex)
         {
-            await DisplayAlert("エラー", "クリップボードが空です", "OK");
-            return;
+            await DisplayAlert("エラー", $"インポートに失敗しました:\n{ex.Message}", "OK");
         }
+    }
 
-        await SaveKifuFromText(pasted, "貼り付け棋譜");
-    }
-    catch (Exception ex)
+    private async void OnPasteClicked(object sender, EventArgs e)
     {
-        await DisplayAlert("エラー", $"貼り付け処理に失敗しました:\n{ex.Message}", "OK");
+        try
+        {
+            var hasText = await Clipboard.Default.GetTextAsync();
+            if (string.IsNullOrWhiteSpace(hasText))
+            {
+                await DisplayAlert("エラー", "クリップボードにテキストがありません", "OK");
+                return;
+            }
+
+            var pasted = await Clipboard.Default.GetTextAsync();
+            
+            if (string.IsNullOrWhiteSpace(pasted))
+            {
+                await DisplayAlert("エラー", "クリップボードが空です", "OK");
+                return;
+            }
+
+            await SaveKifuFromText(pasted, "貼り付け棋譜");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("エラー", $"貼り付け処理に失敗しました:\n{ex.Message}", "OK");
+        }
     }
-}
 
     private async Task SaveKifuFromText(string text, string defaultTitle)
     {
@@ -105,11 +188,17 @@ private async void OnPasteClicked(object sender, EventArgs e)
             string tournament = kifData.Header.GetValueOrDefault("棋戦", "");
             string timeControl = kifData.Header.GetValueOrDefault("持ち時間", "");
 
-            // 戦法を抽出（最初の一つのみ）
-            string senteStrategy = ExtractFirstStrategy(kifData.Header.GetValueOrDefault("先手戦型",
-                                                        kifData.Header.GetValueOrDefault("▲戦型", "")));
-            string goteStrategy = ExtractFirstStrategy(kifData.Header.GetValueOrDefault("後手戦型",
-                                                       kifData.Header.GetValueOrDefault("△戦型", "")));
+            // 戦法を抽出（複数の可能性のあるキーを試す）
+            string senteStrategy = ExtractFirstStrategy(
+                kifData.Header.GetValueOrDefault("先手戦型",
+                kifData.Header.GetValueOrDefault("先手戦法",
+                kifData.Header.GetValueOrDefault("▲戦型", "")))
+            );
+            string goteStrategy = ExtractFirstStrategy(
+                kifData.Header.GetValueOrDefault("後手戦型",
+                kifData.Header.GetValueOrDefault("後手戦法",
+                kifData.Header.GetValueOrDefault("△戦型", "")))
+            );
 
             string winnerText = winner switch
             {
@@ -135,7 +224,7 @@ private async void OnPasteClicked(object sender, EventArgs e)
             };
 
             await App.Database.InsertAsync(record);
-            KifuList.ItemsSource = await App.Database.GetAllAsync();
+            await LoadAndFilterData();
 
             await DisplayAlert("完了", $"{record.DisplayTitle} を保存しました。\n手数: {record.Moves}手", "OK");
         }
@@ -152,13 +241,11 @@ private async void OnPasteClicked(object sender, EventArgs e)
         return match.Success ? match.Groups[1].Value : fullText;
     }
 
-    // 戦法から最初の一つを抽出
     private string ExtractFirstStrategy(string strategies)
     {
         if (string.IsNullOrWhiteSpace(strategies))
             return "";
         
-        // カンマや全角カンマで区切られている場合、最初のものだけ取得
         var parts = strategies.Split(new[] { ',', '、', '，' }, StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 0 ? parts[0].Trim() : strategies.Trim();
     }
@@ -174,7 +261,7 @@ private async void OnPasteClicked(object sender, EventArgs e)
         ((CollectionView)sender).SelectedItem = null;
     }
 }
-// StringNotEmptyConverter
+
 public class StringNotEmptyConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
